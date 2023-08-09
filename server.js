@@ -7,9 +7,10 @@ const server = require('http').Server(app)
 const io = require('socket.io')(server)
 const CronJob = require('cron').CronJob;
 const bodyParser = require('body-parser');
+const _ = require('lodash');
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = "mongodb+srv://hekot77493:nKccvpfYQ5Al2812@cluster1.ippbhts.mongodb.net/?retryWrites=true&w=majority";
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -72,11 +73,38 @@ app.post('/signin', async (req, res) => {
   const userData = await users.findOne({phone, password})
   
   if(userData) {
-    res.status(200).send({ userData });
+    const response = _.omit(userData, 'password');
+    res.status(200).send({ response });
   } else {
     res.status(400).send({error: 'Invalid credentials'});
   }
 });
+
+app.put('/user', async (req, res) => {
+  const { _id, card, password } = req.body;
+
+  const o_id = new ObjectId(_id);
+  const userData = await users.findOne({_id: o_id});
+
+  let response = undefined;
+  if(password && userData && userData.password != password) {
+    response = await users.findOneAndUpdate({_id: o_id},{ $set: { password } }, { returnOriginal: true });
+  }
+
+  if(card) {
+    response = await users.findOneAndUpdate({_id: o_id}, { $set: { card }}, { returnOriginal: true });
+  }
+
+  response = _.omit(_.get(response, 'value', {}), 'password');
+
+  if(response && _.get(response, '_id')) {
+    res.status(200).send({ response: response });
+  } else {
+    res.status(400).send({ response: 'Something went wrong' });
+  }
+});
+
+// get all data const userDataA = await users.find().toArray();
 
 app.get('/', (req, res) => {
   console.log('--------------------------', rooms)
