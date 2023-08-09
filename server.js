@@ -6,6 +6,8 @@ const app = express()
 const server = require('http').Server(app)
 const io = require('socket.io')(server)
 const CronJob = require('cron').CronJob;
+const bodyParser = require('body-parser');
+
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const uri = "mongodb+srv://hekot77493:nKccvpfYQ5Al2812@cluster1.ippbhts.mongodb.net/?retryWrites=true&w=majority";
@@ -35,32 +37,44 @@ async function run() {
 }
 run().catch(console.dir);
 
+const db = client.db('47Database');
+const users = db.collection("users");
 
-app.set('views', './views')
-app.set('view engine', 'ejs')
-app.use(express.static('public'))
-app.use(express.urlencoded({ extended: true }))
+
+app.set('views', './views');
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json());
 
 const rooms = { }
 
 
 app.post('/signup', async (req, res) => {
-  const { login, phone, password } = req.params;
-  console.log('REQ', req);
-  const insert = await client.db('47Database').collection("users").insertOne({
+  const { login, phone, password } = req.body;
+
+  await users.insertOne({
     login, phone, password
   });
-  return insert;
+  const insertedClient = await users.findOne({login, phone, password});
+  if(insertedClient) {
+    res.status(200).send({ response: `User ${insertedClient.login} was created`});
+  } else {
+    res.status(400).send({ response: `User does not created` });
+  }
 });
 
 app.post('/signin', async (req, res) => {
-  const { phone, password } = req.params;
-  const userData = await client.db('47Database').collection("users").findOne({phone, password})
-
+  const { phone, password } = req.body;
+  const userData = await users.findOne({phone, password})
+  
   if(userData) {
-    return userData;
+    res.status(200).send({ userData });
   } else {
-    throw new Error('Invalid credentials');
+    res.status(400).send({error: 'Invalid credentials'});
   }
 });
 
