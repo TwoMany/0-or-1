@@ -1,0 +1,23 @@
+{
+  "name": "current-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "devStart": "nodemon server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^2.4.0",
+    "ejs": "^2.6.1",
+    "express": "^4.17.1",
+    "mongodb": "^5.7.0",
+    "mongoose": "^5.13.20",
+    "socket.io": "^2.2.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "nodemon": "^1.19.0"
+  }
+}
