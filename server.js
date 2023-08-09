@@ -65,7 +65,6 @@ app.post('/signup', async (req, res) => {
   } else {
     res.status(400).send({ response: `User does not created` });
   }
-  
 });
 
 app.post('/signin', async (req, res) => {
