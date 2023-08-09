@@ -25,11 +25,12 @@ async function run() {
     await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    console.log(await client.db('47Database').collection("players").findOne({}))
+    // await client.db('47Database').createCollection('users');
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // console.log(await client.db('47Database').collection("players").findOne({}))
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
@@ -43,97 +44,25 @@ app.use(express.urlencoded({ extended: true }))
 const rooms = { }
 
 
-const users = [{
-  name: "Oleg",
-  id: 1,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 3,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 4,
-  type: 'Readler'
-},
-{
-  name: "Oleg",
-  id: 5,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 6,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 7,
-  type: 'Readler'
-},
-{
-  name: "Oleg",
-  id: 8,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 9,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 10,
-  type: 'Readler'
-},
-{
-  name: "Oleg",
-  id: 11,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 12,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 13,
-  type: 'Readler'
-},
-{
-  name: "Oleg",
-  id: 14,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 15,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 16,
-  type: 'Readler'
-},
-{
-  name: "Oleg",
-  id: 17,
-  type: 'Readler'
-},
-{
-  name: "Victor",
-  id: 18,
-  type: 'AnswerMan'
-},
-{
-  name: "ALEX",
-  id: 19,
-  type: 'Readler'
-},
-]
+app.post('/signup', async (req, res) => {
+  const { login, phone, password } = req.params;
+  console.log('REQ', req);
+  const insert = await client.db('47Database').collection("users").insertOne({
+    login, phone, password
+  });
+  return insert;
+});
+
+app.post('/signin', async (req, res) => {
+  const { phone, password } = req.params;
+  const userData = await client.db('47Database').collection("users").findOne({phone, password})
+
+  if(userData) {
+    return userData;
+  } else {
+    throw new Error('Invalid credentials');
+  }
+});
 
 app.get('/', (req, res) => {
   console.log('--------------------------', rooms)
