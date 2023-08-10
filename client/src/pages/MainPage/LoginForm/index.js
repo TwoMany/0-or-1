@@ -76,14 +76,14 @@ export const LoginForm = () => {
         }}
       >
         <Space>
-          <Button type="primary" htmlType="submit">
-            Submit
-          </Button>
           {isLogin ? (
             <Button onClick={() => setIsLogin(false)}>Sign Up</Button>
           ) : (
             <Button onClick={() => setIsLogin(true)}>Sign In</Button>
           )}
+          <Button type="primary" htmlType="submit">
+            Submit
+          </Button>
         </Space>
       </Form.Item>
     </Form>
