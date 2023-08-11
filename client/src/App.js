@@ -5,7 +5,7 @@ import { Content, Header } from "antd/es/layout/layout";
 function App() {
   return (
     <div className="App">
-      <Layout style={{ padding: "24px 0" }}>
+      <Layout>
         <Header style={{ display: "flex", alignItems: "center" }}>
           <Button
             disabled={!localStorage.getItem("user")}
