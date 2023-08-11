@@ -88,6 +88,13 @@ app.get('/players', async (req, res) => {
   res.status(200).send({response: players});
 })
 
+app.get('/time', async (req, res) => {
+  const {
+    gameStartHour
+  } = await db.collection('timer_settings').findOne({});
+  res.status(200).send({response: gameStartHour});
+})
+
 const rooms = { }
 
 
