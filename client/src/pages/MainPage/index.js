@@ -80,10 +80,12 @@ export const MainPage = () => {
             <>
               <div style={{ display: "flex", justifyContent: "space-between", minWidth: 120 }}>
                 <div>
-                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"})
+                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"}){" "}
+                  {playerIndex % 2 === 0 ? "загадую" : "розгадую"}
                 </div>
                 <div>
-                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : "?"})
+                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : "?"}){" "}
+                  {oponentIndex % 2 === 0 ? "загадую" : "розгадую"}
                 </div>
               </div>
               {!get(players, `[${playerIndex}].answer`) && (
