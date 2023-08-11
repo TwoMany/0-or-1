@@ -142,13 +142,8 @@ app.post('/participate', async (req, res) => {
     _id,
     login,
   } = req.body
-  await db.collection('players').insertOne({userId: _id, name: login}, (err, data) => {
-    if(err) {
-      res.status(500).send({response: err});
-    }  else{
-      res.status(200).send({response: data.ops[0]})
-    }
-  });
+ const player = await db.collection('players').insertOne({userId: _id, name: login});
+ res.status(200).send({response: player});
 })
 
 server.listen(10000)
