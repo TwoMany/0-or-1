@@ -64,7 +64,7 @@ export const MainPage = () => {
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
-  console.log("room", user, players);
+  console.log("room", player, players);
 
   return (
     <Space direction="vertical" align="center" style={{ width: "100%" }}>
@@ -97,6 +97,7 @@ export const MainPage = () => {
             </>
           ) : (
             <Button
+              disabled={players.length === 1}
               onClick={() => {
                 postData("/participate", user).then((data) => {});
               }}
