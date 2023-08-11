@@ -79,12 +79,9 @@ app.post('/answer', async (req, res) => {
 })
 
 app.get('/players', async (req, res) => {
-  const {
-    userId,
-    answer,
-  } = req.body;
   const players = await db.collection('players').find({}).toArray();
   io.emit('players', players);
+  res.status(200).send({response: players});
 })
 
 const rooms = { }
