@@ -12,9 +12,15 @@ export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
 
+  const fetchData = async () => await fetch("/players");
+
   useEffect(() => {
     user && localStorage.setItem("user", JSON.stringify(user));
   }, [user]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   useEffect(() => {
     function onConnect(value) {
@@ -43,7 +49,6 @@ export const MainPage = () => {
     };
   }, []);
 
-
   const handleSendAnswer = useCallback(
     (answer) => {
       postData("/answer", { answer, userId: user._id }).then((data) => {
@@ -53,13 +58,13 @@ export const MainPage = () => {
     [user]
   );
 
-  const playerIndex = players.findIndex(({userId}) => user._id === userId);
-  const player = get(players, playerIndex)
+  const playerIndex = players.findIndex(({ userId }) => user._id === userId);
+  const player = get(players, playerIndex);
 
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
-  const oponent = get(players, oponentIndex)
+  const oponent = get(players, oponentIndex);
 
-  console.log('room', user, players);
+  console.log("room", user, players);
 
   return (
     <Space direction="vertical" align="center" style={{ width: "100%" }}>
@@ -68,15 +73,17 @@ export const MainPage = () => {
 
       {user ? (
         <Space direction="vertical" align="center">
-          <div>{user.login}, {players.length}</div>
+          <div>
+            {user.login}, {players.length}
+          </div>
           {player && oponent ? (
             <>
-              <div style={{display: 'flex', justifyContent: 'space-between', minWidth: 120}}>
+              <div style={{ display: "flex", justifyContent: "space-between", minWidth: 120 }}>
                 <div>
-                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : '?'})
+                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"})
                 </div>
                 <div>
-                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : '?'})
+                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : "?"})
                 </div>
               </div>
               {!get(players, `[${playerIndex}].answer`) && (
@@ -89,9 +96,7 @@ export const MainPage = () => {
           ) : (
             <Button
               onClick={() => {
-                postData("/participate", user).then((data) => {
-                  
-                });
+                postData("/participate", user).then((data) => {});
               }}
               size="large"
             >
