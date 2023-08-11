@@ -86,8 +86,9 @@ app.post('/signup', async (req, res) => {
   await users.insertOne({
     login, phone, password
   });
-  console.log('req.body', req.body)
+
   const insertedClient = await users.findOne({login, phone, password});
+
   if(insertedClient) {
     res.status(200).send({ response: `User ${insertedClient.login} was created`});
   } else {
