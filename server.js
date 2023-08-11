@@ -9,13 +9,13 @@ const _ = require('lodash');
 
 const users = db.collection('users');
 
-async function startGame(data) {
-  const players = data ? data : await db.collection('players').find({}).toArray();
+async function startGame() {
+  const players = await db.collection('players').find({}).toArray();
   const playersToDelete = [];
 
   if(_.get(players, 'length') >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-    const arr = players.slice(0, targetLength).sort(() => 0.5 - Math.random());
+    const arr = players.slice(0, targetLength);
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
@@ -24,7 +24,8 @@ async function startGame(data) {
 
     const startRound = async() => {
       let players = await db.collection('players').find({}).toArray();
-      for(let i = 0; i < players.length; i+=2) {
+
+      for(let i = 0; i < players.length - 1; i+=2) {
         if(players[i].answer == players[i + 1].answer) {
           await db.collection('players').deleteOne({_id: players[i]._id})
           await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
@@ -66,24 +67,6 @@ app.use(bodyParser.urlencoded({
 }));
 app.use(bodyParser.json());
 
-
-app.set('views', './views');
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true }));
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(bodyParser.json());
-
-
-  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
-  const players = await db.collection('players').find({}).toArray();
-  io.emit('players', players);
-})
-
-const rooms = { }
-
 app.post('/answer', async (req, res) => {
   const {
     userId,
@@ -94,6 +77,18 @@ app.post('/answer', async (req, res) => {
   const players = await db.collection('players').find({}).toArray();
   io.emit('players', players);
 })
+
+app.get('/players', async (req, res) => {
+  const {
+    userId,
+    answer,
+  } = req.body;
+  const players = await db.collection('players').find({}).toArray();
+  io.emit('players', players);
+})
+
+const rooms = { }
+
 
 app.post('/signup', async (req, res) => {
   const { login, phone, password } = req.body;
