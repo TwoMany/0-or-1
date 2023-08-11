@@ -24,7 +24,7 @@ async function startGame(data) {
     for(let i = 0; i < arr.length / 2; i++) {
       Object.assign(readlers[i], { type: READLER, answer: null });
       Object.assign(guessers[i], { type: GUESSER, answer: null });
-      gameArray.push({readler: readlers[i], guesser: guessers[i], roomId});
+      gameArray.push({readler: readlers[i], guesser: guessers[i], roomId: i + 1});
       
       io.emit('new-user', readlers[i]);
       io.emit('new-user', guessers[i]);
@@ -153,7 +153,7 @@ io.on('connection', async socket => {
         gameStartHour
     } = await db.collection('timer_settings').findOne({});
 
-    const job = new CronJob(`0 0 ${gameStartHour} * * *`,
+    const job = new CronJob(`0 * * * * *`,
         async () => {
                 await startGame();
             },
