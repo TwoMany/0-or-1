@@ -8,7 +8,6 @@ import { socket } from "../../socket";
 import { get } from "lodash";
 
 export const MainPage = () => {
-  const [isConnected, setIsConnected] = useState(socket.connected);
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
 
@@ -23,31 +22,23 @@ export const MainPage = () => {
   }, []);
 
   useEffect(() => {
-    function onConnect(value) {
-      setIsConnected(true);
-      // console.log(value);
-    }
+    socket.connect();
 
-    function onDisconnect(value) {
-      setIsConnected(false);
-      // console.log(value);
-    }
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
+  useEffect(() => {
     function onPlayersChange(value) {
       console.log(value);
       setPlayers(value);
     }
-
-    socket.on("connect", onConnect);
-    socket.on("disconnect", onDisconnect);
     socket.on("players", onPlayersChange);
-
     return () => {
-      socket.off("connect", onConnect);
-      socket.off("disconnect", onDisconnect);
       socket.off("players", onPlayersChange);
     };
-  }, []);
+  }, [players]);
 
   const handleSendAnswer = useCallback(
     (answer) => {
