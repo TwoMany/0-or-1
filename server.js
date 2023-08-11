@@ -7,30 +7,48 @@ const CronJob = require('cron').CronJob;
 const bodyParser = require('body-parser');
 const _ = require('lodash');
 
-const READLER = 'READLER';
-const GUESSER = 'GUESSER';
 const users = db.collection('users');
 
 async function startGame(data) {
   const players = data ? data : await db.collection('players').find({}).toArray();
+  const playersToDelete = [];
 
   if(_.get(players, 'length') >= 2) {
-    const gameArray = [];
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength).sort(() => 0.5 - Math.random());
-    const readlers = arr.slice(0, arr.length / 2);
-    const guessers = arr.slice(arr.length / 2, arr.length);
 
-    for(let i = 0; i < arr.length / 2; i++) {
-      Object.assign(readlers[i], { type: READLER, answer: null });
-      Object.assign(guessers[i], { type: GUESSER, answer: null });
-      gameArray.push({readler: readlers[i], guesser: guessers[i], roomId: i + 1});
-      
-      io.emit('new-user', readlers[i]);
-      io.emit('new-user', guessers[i]);
+    playersToDelete.push(...players.slice(targetLength, players.length));
+
+    await db.collection('players').deleteMany({_id: {$in: playersToDelete.map(el=> el._id)}});
+    io.emit('players', arr);
+
+    const startRound = async() => {
+      let players = await db.collection('players').find({}).toArray();
+      for(let i = 0; i < players.length; i+=2) {
+        if(players[i].answer == players[i + 1].answer) {
+          await db.collection('players').deleteOne({_id: players[i]._id})
+          await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
+
+        } else {
+          await db.collection('players').deleteOne({_id: players[i + 1]._id})
+          await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
+        }
+      }
+      players = await db.collection('players').find({}).toArray();
+      io.emit('players', players);
+
+      if(players.length > 1) {
+        setTimeout(async()=>{
+          startRound()
+        }, 60000)
+      } else {
+        io.emit('Game finished', { winner: {...players[0]} });
+      }
     }
 
-    io.emit('gameArray', gameArray);
+    setTimeout(async()=>{
+      startRound()
+    }, 60000)
 
   } else {
     io.emit('Start game failed', 'Игра не началась, недостаточное колличество игроков!')
@@ -40,32 +58,13 @@ async function startGame(data) {
 
 app.post('/answer', async (req, res) => {
   const {
-    data
+    userId,
+    answer,
   } = req.body;
-  const roundComplete = data.every(({readler, guesser}) => (readler.answer && guesser.answer));
-  if(roundComplete) {
-    const filteredData = [];
 
-    data.forEach(({readler, guesser}) => {
-      if(readler.answer == guesser.answer) {
-        filteredData.push({...guesser});
-      } else {
-        filteredData.push({...readler});
-      }
-      io.sockets.sockets[readler.socketId].leave(readler.roomId);
-      io.sockets.sockets[guesser.socketId].leave(guesser.roomId);
-    });
-
-    if(_.get(filteredData, 'length') > 1) {
-        await startGame(filteredData);
-    } else {
-      await db.collection('players').deleteMany({});
-      
-      await db.collection('winners').insertOne({...filteredData.slice(0, 1)});
-
-      io.emit('Game finished', { winner: {...filteredData.slice(0, 1)} });
-    }
-  }
+  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
+  const players = await db.collection('players').find({}).toArray();
+  io.emit('players', players);
 })
 
 app.set('views', './views');
@@ -142,7 +141,12 @@ app.post('/participate', async (req, res) => {
     _id,
     login,
   } = req.body
+
  const player = await db.collection('players').insertOne({userId: _id, name: login});
+ const players = await db.collection('players').find({}).toArray();
+
+ io.emit('players', players);
+
  res.status(200).send({response: player});
 })
 
