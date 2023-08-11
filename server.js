@@ -17,7 +17,7 @@ async function startGame(data) {
   if(_.get(players, 'length') >= 2) {
     const gameArray = [];
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-    const arr = users.slice(0, targetLength).sort(() => 0.5 - Math.random());
+    const arr = players.slice(0, targetLength).sort(() => 0.5 - Math.random());
     const readlers = arr.slice(0, arr.length / 2);
     const guessers = arr.slice(arr.length / 2, arr.length);
 
