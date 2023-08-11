@@ -1,7 +1,8 @@
+import queryString from 'query-string'; 
+
 export async function postData(url = "", data = {}) {
-  var body = new FormData();
-  body.append( "json", JSON.stringify( data ) );
   // Default options are marked with *
+
   const response = await fetch('http://localhost:10000' + url, {
     method: "POST", // *GET, POST, PUT, DELETE, etc.
     mode: "no-cors", // no-cors, *cors, same-origin
@@ -9,13 +10,13 @@ export async function postData(url = "", data = {}) {
     // credentials: "same-origin", // include, *same-origin, omit
     headers: {
       'Accept': 'application/json',
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     // redirect: "follow", // manual, *follow, error
     // referrerPolicy: "no-referrer", // no-referrer, *client
-    body, // body data type must match "Content-Type" header
+    body: queryString.stringify( data ), // body data type must match "Content-Type" header
   });
-  return response ? await response.json() : {}; // parses JSON response into native JavaScript objects
+  return await response.json(); // parses JSON response into native JavaScript objects
 }
 
 

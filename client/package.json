@@ -9,6 +9,7 @@
     "antd": "^5.8.2",
     "http-proxy-middleware": "^2.0.6",
     "lodash": "^4.17.21",
+    "query-string": "^8.1.0",
     "react": "^18.2.0",
     "react-countdown": "^2.3.5",
     "react-dom": "^18.2.0",
