@@ -57,6 +57,15 @@ async function startGame(data) {
 /// post anwser
 
 
+app.set('views', './views');
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json());
+
 
 app.set('views', './views');
 app.set('view engine', 'ejs');
@@ -66,6 +75,12 @@ app.use(bodyParser.urlencoded({
   extended: true
 }));
 app.use(bodyParser.json());
+
+
+  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
+  const players = await db.collection('players').find({}).toArray();
+  io.emit('players', players);
+})
 
 const rooms = { }
 
