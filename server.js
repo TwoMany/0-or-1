@@ -56,6 +56,16 @@ async function startGame(data) {
 }
 /// post anwser
 
+
+app.set('views', './views');
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json());
+
 app.post('/answer', async (req, res) => {
   const {
     userId,
@@ -66,15 +76,6 @@ app.post('/answer', async (req, res) => {
   const players = await db.collection('players').find({}).toArray();
   io.emit('players', players);
 })
-
-app.set('views', './views');
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true }));
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(bodyParser.json());
 
 const rooms = { }
 
