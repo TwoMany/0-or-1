@@ -15,7 +15,7 @@ function App() {
             }}
           />
         </Header>
-        <Content style={{ padding: "24px", minHeight: 280 }}>
+        <Content style={{ padding: "12px 24px", minHeight: 280 }}>
           <MainPage />
         </Content>
       </Layout>
