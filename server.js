@@ -79,6 +79,7 @@ app.post('/answer', async (req, res) => {
   await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
   const players = await db.collection('players').find({}).toArray();
   io.emit('players', players);
+  res.status(200).send({response: players});
 })
 
 app.get('/players', async (req, res) => {
