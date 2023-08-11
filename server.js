@@ -142,7 +142,7 @@ app.post('/participate', async (req, res) => {
     login,
   } = req.body
 
- const player = await db.collection('players').insertOne({userId: _id, name: login});
+ const player = await db.collection('players').insertOne({userId: _id, name: login, answer: null});
  const players = await db.collection('players').find({}).toArray();
 
  io.emit('players', players);
