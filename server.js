@@ -169,7 +169,7 @@ io.on('connection', async socket => {
         gameStartHour
     } = await db.collection('timer_settings').findOne({});
 
-    const job = new CronJob(`0 * * * * *`,
+    const job = new CronJob(`0 ${gameStartHour} * * * *`,
         async () => {
                 await startGame();
             },
