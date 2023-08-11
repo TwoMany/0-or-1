@@ -54,6 +54,10 @@ export const MainPage = () => {
   );
 
   const playerIndex = players.findIndex(({userId}) => user._id === userId);
+  const player = get(players, playerIndex)
+
+  const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
+  const oponent = get(players, oponentIndex)
 
   console.log('room', user, players);
 
@@ -64,18 +68,18 @@ export const MainPage = () => {
 
       {user ? (
         <Space direction="vertical" align="center">
-          <div>{user.login}</div>
-          {playerIndex >= 0 ? (
+          <div>{user.login}, {players.length}</div>
+          {player && oponent ? (
             <>
-              <div>
-                <Space>
-                  {get(players, `[${playerIndex}].name`)} {get(players, `[${playerIndex}].answer`)}
-                </Space>
-                <Space>
-                  {get(players, `[${playerIndex + 1}].name`)} {get(players, `[${playerIndex + 1}].answer`)}
-                </Space>
+              <div style={{display: 'flex', justifyContent: 'space-between', minWidth: 120}}>
+                <div>
+                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : '?'})
+                </div>
+                <div>
+                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : '?'})
+                </div>
               </div>
-              {!get(players, `[${playerIndex + 1}].answer`) && (
+              {!get(players, `[${playerIndex}].answer`) && (
                 <Space.Compact block>
                   <Button onClick={() => handleSendAnswer(0)}>0</Button>
                   <Button onClick={() => handleSendAnswer(1)}>1</Button>
@@ -89,6 +93,7 @@ export const MainPage = () => {
                   
                 });
               }}
+              size="large"
             >
               Register
             </Button>

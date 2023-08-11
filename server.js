@@ -56,16 +56,7 @@ async function startGame(data) {
 }
 /// post anwser
 
-app.post('/answer', async (req, res) => {
-  const {
-    userId,
-    answer,
-  } = req.body;
 
-  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
-  const players = await db.collection('players').find({}).toArray();
-  io.emit('players', players);
-})
 
 app.set('views', './views');
 app.set('view engine', 'ejs');
@@ -78,6 +69,16 @@ app.use(bodyParser.json());
 
 const rooms = { }
 
+app.post('/answer', async (req, res) => {
+  const {
+    userId,
+    answer,
+  } = req.body;
+
+  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
+  const players = await db.collection('players').find({}).toArray();
+  io.emit('players', players);
+})
 
 app.post('/signup', async (req, res) => {
   const { login, phone, password } = req.body;
