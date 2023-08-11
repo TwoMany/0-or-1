@@ -5,26 +5,39 @@ import { postData } from "../../tools";
 import { useCallback, useEffect, useState } from "react";
 import { socket } from "../../socket";
 import * as dayjs from "dayjs";
-import { get } from "lodash";
+import { get, isEqual } from "lodash";
 import ReactPlayer from "react-player";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
   const [hours, setHours] = useState(22);
-  const [loading, setLoading] = useState(true);
+  const [countdown, setCountdown] = useState();
+  const [loading, setLoading] = useState(false);
+
+  const fetchPlayers = useCallback(async () => {
+    const response = await fetch("/players");
+    const players = await response.json();
+    setPlayers(players.response);
+    setLoading(false);
+  }, []);
 
   const fetchData = useCallback(async () => {
-    await fetch("/players");
     const response = await fetch("/time");
     const time = await response.json();
     setHours(time.response);
+    setCountdown(new Date().setHours(time.response, 0, 0, 0));
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    socket.connect();
+    setLoading(true);
+    fetchPlayers();
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    socket.connect();
 
     return () => {
       socket.disconnect();
@@ -32,12 +45,12 @@ export const MainPage = () => {
   }, []);
 
   useEffect(() => {
-    user && localStorage.setItem("user", JSON.stringify(user));
+    if (user) localStorage.setItem("user", JSON.stringify(user));
   }, [user]);
 
   useEffect(() => {
     function onPlayersChange(value) {
-      setPlayers(value);
+      if (!isEqual(players, value)) setPlayers(value);
     }
     socket.on("players", onPlayersChange);
     return () => {
@@ -54,13 +67,11 @@ export const MainPage = () => {
     [user]
   );
 
-  const playerIndex = players.findIndex(({ userId }) => get(user, "_id") === userId);
+  const playerIndex = (players || []).findIndex(({ userId }) => get(user, "_id") === userId);
   const player = get(players, playerIndex);
 
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
-
-  const countdown = new Date().setHours(hours, 0, 0, 0);
 
   return loading ? (
     <div
@@ -74,10 +85,20 @@ export const MainPage = () => {
       <Spin />
     </div>
   ) : (
-    <Space direction="vertical" align="center" style={{ width: "100%" }}>
+    <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
       <div style={{ fontSize: 24, textAlign: "center" }}>
         <div style={{ fontSize: 28 }}>Start at {hours}:00</div>
-        <Countdown date={countdown} />
+        <Countdown
+          overtime={Boolean(get(players, "length"))}
+          date={
+            dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
+              ? dayjs().startOf("minute").valueOf() + 60000
+              : countdown
+          }
+          onComplete={() => {
+            fetchPlayers();
+          }}
+        />
       </div>
 
       <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
@@ -85,7 +106,7 @@ export const MainPage = () => {
       {user ? (
         <Space direction="vertical" align="center">
           <div>
-            {user.login} | {players.length} учасників
+            {user.login} | {get(players, "length")} учасників
           </div>
           {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
             <>
@@ -108,7 +129,9 @@ export const MainPage = () => {
             </>
           ) : (
             <Button
-              disabled={player || dayjs(countdown).diff(dayjs(), "minute") > 5}
+              disabled={
+                player || dayjs(countdown).diff(dayjs(), "minute") > 5 || dayjs(countdown).diff(dayjs(), "minute") < 0
+              }
               onClick={() => {
                 postData("/participate", user).then((data) => {});
               }}
