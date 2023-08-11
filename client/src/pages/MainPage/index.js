@@ -54,7 +54,7 @@ export const MainPage = () => {
           )}
         </Space>
       ) : (
-        <LoginForm />
+        <LoginForm setUser={setUser} />
       )}
     </Space>
   );

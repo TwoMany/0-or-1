@@ -1,8 +1,8 @@
-import { Input, Form, Space, Button } from "antd";
+import { Input, Form, Space, Button, notification } from "antd";
 import { useState } from "react";
 import { postData } from "../../../tools";
 
-export const LoginForm = () => {
+export const LoginForm = ({setUser}) => {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
@@ -20,11 +20,13 @@ export const LoginForm = () => {
       onFinish={(values) => {
         if (isLogin) {
           postData("/signin", values).then((data) => {
-            console.log(data); // JSON data parsed by `response.json()` call
+            console.log(data);
+            setUser(data.response);
           });
         } else {
           postData("/signup", values).then((data) => {
-            console.log(data); // JSON data parsed by `response.json()` call
+            notification.success({message: 'Successfully'})
+            setIsLogin(true)
           });
         }
       }}
