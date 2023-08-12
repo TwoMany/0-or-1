@@ -180,7 +180,7 @@ app.post('/participate', async (req, res) => {
  res.status(200).send({response: player});
 })
 
-server.listen(10000)
+server.listen(443)
 console.log('Server running on %s', server.address().port);
 
 io.on('connection', async socket => {
