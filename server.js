@@ -40,7 +40,7 @@ async function startGame() {
         } else if(!isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection('players').deleteOne({_id: players[i + 1]._id})
           await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
-          
+
         } else {
           await db.collection('players').deleteOne({_id: players[i].answer ? players[i + 1]._id : players[i]._id})
           await db.collection('players').updateOne({_id: players[i].answer ? players[i]._id : players[i + 1]._id}, {$set: {answer: null}})
@@ -181,6 +181,7 @@ app.post('/participate', async (req, res) => {
 })
 
 server.listen(10000)
+console.log('Server running on %s', server.address().port);
 
 io.on('connection', async socket => {
     const {
