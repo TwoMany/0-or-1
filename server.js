@@ -43,7 +43,7 @@ async function startGame() {
           startRound()
         }, 60000)
       } else {
-        await db.collection('winners').insertOne({..._.omit(players, '_id')});
+        await db.collection('winners').insertOne(_.omit(players, '_id'));
         await db.collection('players').deleteMany({});
         io.emit('players', []);
         io.emit('Game finished', { winner: {...players[0]} });
