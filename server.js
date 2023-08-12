@@ -5,7 +5,7 @@ const server = require('http').Server(app);
 const socketIO = require('socket.io');
 const io = socketIO(server, {
   cors: {
-    origin: process.env.NODE_ENV == 'production' ? "https://illusiumgame.com" : "http://localhost:443", 
+    origin: process.env.NODE_ENV == 'production' ? "https://illusiumgame.com" : "http://localhost:10000", 
     methods: ["GET", "POST", "PUT", "DELETE"], 
     //allowedHeaders: ["my-custom-header"], 
   }
@@ -179,8 +179,8 @@ app.post('/participate', async (req, res) => {
 
  res.status(200).send({response: player});
 })
-
-server.listen(443)
+server.listen(10000)
+console.log(process, process.env)
 
 io.on('connection', async socket => {
     const {
