@@ -2,7 +2,14 @@ const { db } = require('./database_config');
 const express = require('express');
 const app = express();
 const server = require('http').Server(app);
-const io = require('socket.io')(server);
+const socketIO = require('socket.io');
+const io = socketIO(server, {
+  cors: {
+    origin: process.env.NODE_ENV == 'production' ? "https://illusiumgame.com" : "http://localhost:10000", 
+    methods: ["GET", "POST", "PUT", "DELETE"], 
+    //allowedHeaders: ["my-custom-header"], 
+  }
+});
 const CronJob = require('cron').CronJob;
 const bodyParser = require('body-parser');
 const _ = require('lodash');
@@ -26,13 +33,17 @@ async function startGame() {
       let players = await db.collection('players').find({}).toArray();
 
       for(let i = 0; i < players.length - 1; i+=2) {
-        if(players[i].answer == players[i + 1].answer) {
+        if(isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection('players').deleteOne({_id: players[i]._id})
           await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
 
-        } else {
+        } else if(!isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection('players').deleteOne({_id: players[i + 1]._id})
           await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
+
+        } else {
+          await db.collection('players').deleteOne({_id: players[i].answer ? players[i + 1]._id : players[i]._id})
+          await db.collection('players').updateOne({_id: players[i].answer ? players[i]._id : players[i + 1]._id}, {$set: {answer: null}})
         }
       }
       players = await db.collection('players').find({}).toArray();
@@ -170,6 +181,7 @@ app.post('/participate', async (req, res) => {
 })
 
 server.listen(10000)
+console.log('Server running on %s', server.address().port);
 
 io.on('connection', async socket => {
     const {
@@ -200,20 +212,7 @@ io.on('connection', async socket => {
         socket.to(roomId).broadcast.emit('user-connected', name);
     })
 
-    // socket.on('send-chat-message', (room, message) => {
-    //   socket.to(room).broadcast.emit('chat-message', { message: message, name: rooms[room].users[socket.id] })
-    // })
     socket.on('disconnect', () => {
-        getUserRooms(socket).forEach(room => {
-            socket.to(room).broadcast.emit('user-disconnected', rooms[room].users[socket.id])
-            delete rooms[room].users[socket.id]
-        })
+
     })
 })
-
-function getUserRooms(socket) {
-    return Object.entries(rooms).reduce((names, [name, room]) => {
-        if (room.users[socket.id] != null) names.push(name)
-        return names
-    }, [])
-}
