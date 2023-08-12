@@ -88,7 +88,7 @@ export const MainPage = () => {
     <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
       <div style={{ fontSize: 24, textAlign: "center" }}>
         <div style={{ fontSize: 28 }}>Start at {hours}:00</div>
-        <Countdown
+        {countdown && <Countdown
           overtime={Boolean(get(players, "length"))}
           date={
             dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
@@ -98,10 +98,10 @@ export const MainPage = () => {
           onComplete={() => {
             fetchPlayers();
           }}
-        />
+        />}
       </div>
 
-      <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+      {Boolean(get(players, "length")) && <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />}
 
       {user ? (
         <Space direction="vertical" align="center">
@@ -135,7 +135,7 @@ export const MainPage = () => {
               onClick={() => {
                 postData("/participate", user).then((data) => {});
               }}
-              size="middle"
+              size="large"
               type="primary"
             >
               Register
