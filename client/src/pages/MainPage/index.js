@@ -101,7 +101,7 @@ export const MainPage = () => {
         />
       </div>
 
-      <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+      {get(players, "length") && <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />}
 
       {user ? (
         <Space direction="vertical" align="center">
@@ -135,7 +135,7 @@ export const MainPage = () => {
               onClick={() => {
                 postData("/participate", user).then((data) => {});
               }}
-              size="middle"
+              size="large"
               type="primary"
             >
               Register
