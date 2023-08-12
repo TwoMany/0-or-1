@@ -181,7 +181,6 @@ app.post('/participate', async (req, res) => {
 })
 
 server.listen(443)
-console.log('Server running on %s', server.address().port);
 
 io.on('connection', async socket => {
     const {
