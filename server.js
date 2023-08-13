@@ -162,10 +162,6 @@ app.put('/user', async (req, res) => {
 });
 
 
-app.get('/', (req, res) => {
-  res.render('index', { rooms: rooms })
-})
-
 app.post('/participate', async (req, res) => {
   const {
     _id,
