@@ -179,7 +179,7 @@ app.post('/participate', async (req, res) => {
 
  res.status(200).send({response: player});
 })
-server.listen(10000)
+server.listen(8080)
 console.log(process, process.env)
 
 io.on('connection', async socket => {
