@@ -176,7 +176,7 @@ app.post('/participate', async (req, res) => {
  res.status(200).send({response: player});
 })
 server.listen(9000)
-console.log(process, process.env)
+console.log(server)
 
 io.on('connection', async socket => {
     const {
