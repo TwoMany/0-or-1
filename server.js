@@ -1,7 +1,7 @@
 const { db } = require('./database_config');
 const express = require('express');
 const app = express();
-const server = require('http').Server(app);
+const server = require('https').Server(app);
 const socketIO = require('socket.io');
 const io = socketIO(server, {
   cors: {
