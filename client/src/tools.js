@@ -3,7 +3,7 @@ import queryString from 'query-string';
 export async function postData(url = "", data = {}) {
   // Default options are marked with *
 
-  const response = await fetch(url, {
+  const response = await fetch('https://server.illusiumgame.com' + url, {
     method: "POST", // *GET, POST, PUT, DELETE, etc.
     mode: "no-cors", // no-cors, *cors, same-origin
     // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
