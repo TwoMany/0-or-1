@@ -16,14 +16,20 @@ export const MainPage = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchPlayers = useCallback(async () => {
-    const response = await fetch("https://server.illusiumgame.com/players");
+    const response = await fetch("https://server.illusiumgame.com/players", {
+      method: "GET", // *GET, POST, PUT, DELETE, etc.
+      mode: "no-cors", // no-cors, *cors, same-origin
+    });
     const players = await response.json();
     setPlayers(players.response);
     setLoading(false);
   }, []);
 
   const fetchData = useCallback(async () => {
-    const response = await fetch("https://server.illusiumgame.com/time");
+    const response = await fetch("https://server.illusiumgame.com/time", {
+      method: "GET", // *GET, POST, PUT, DELETE, etc.
+      mode: "no-cors", // no-cors, *cors, same-origin
+    });
     const time = await response.json();
     setHours(time.response);
     setCountdown(new Date().setHours(time.response, 0, 0, 0));
