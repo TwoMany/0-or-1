@@ -33,11 +33,11 @@ async function startGame() {
       let players = await db.collection('players').find({}).toArray();
 
       for(let i = 0; i < players.length - 1; i+=2) {
-        if(isEqual(players[i].answer, players[i + 1].answer)) {
+        if(_.isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection('players').deleteOne({_id: players[i]._id})
           await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
 
-        } else if(!isEqual(players[i].answer, players[i + 1].answer)) {
+        } else if(!_.isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection('players').deleteOne({_id: players[i + 1]._id})
           await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
 
