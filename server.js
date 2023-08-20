@@ -10,23 +10,14 @@ const io = socketIO(server, {
     //allowedHeaders: ["my-custom-header"], 
   }
 });
-const CronJob = require('cron').CronJob;
+
 const bodyParser = require('body-parser');
 const _ = require('lodash');
 
 const users = db.collection('users');
 
-const chooseRoundWinner = async(player1, player2) => {
-
-  if(_.isEqual(player1.answer, player2.answer)) {
-    await db.collection('players').deleteOne({_id: player1._id})
-    await db.collection('players').updateOne({_id: player2._id}, {$set: {answer: null}})
-
-  } else if(!_.isEqual(player1.answer, player2.answer)) {
-    await db.collection('players').deleteOne({_id: player2._id})
-    await db.collection('players').updateOne({_id: player1._id}, {$set: {answer: null}})
-  } 
-
+async function gameDate() {
+  return await db.collection('timer_settings').findOne({});
 }
 
 async function startGame() {
@@ -45,12 +36,11 @@ async function startGame() {
 
     const startRound = async() => {
       let players = await db.collection('players').find({}).toArray();
-      console.log('.........................',players.length, players.length - 1)
       for(let i = 0; i < players.length - 1; i+=2) {
 
         players[i].bot = false;
         players[i + 1].bot = false;
-        console.log('---------------------', players[i].answer, players[i + 1].answer)
+
         if(!players[i].answer) {
           players[i].answer = String(Math.round(Math.random()));
           players[i].bot = true;
@@ -60,9 +50,16 @@ async function startGame() {
           players[i + 1].answer = String(Math.round(Math.random()));
           players[i + 1].bot = true;
         }
-        console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
 
-        await chooseRoundWinner(players[i], players[i + 1]);
+        if(_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection('players').deleteOne({_id: players[i]._id})
+          await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
+      
+        } else if(!_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection('players').deleteOne({_id: players[i + 1]._id})
+          await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
+        } 
+
       }
       players = await db.collection('players').find({}).toArray();
       io.emit('players', players);
@@ -71,7 +68,8 @@ async function startGame() {
         setTimeout(async()=>{
           startRound()
         }, 60000)
-      } else {
+      } else if (players.length == 1) {
+        
         await db.collection('winners').insertOne(_.omit(...players, ['_id', 'answer', 'bot']));
         await db.collection('players').deleteMany({});
         io.emit('players', []);
@@ -206,36 +204,11 @@ app.post('/participate', async (req, res) => {
 server.listen(9000)
 
 io.on('connection', async socket => {
-    const {
-        gameStartHour,
-        gameStartMinutes
-    } = await db.collection('timer_settings').findOne({});
-    
-    const job = new CronJob(`0 ${gameStartMinutes || 0} ${gameStartHour} * * *`,
-        async () => {
-                await startGame();
-            },
-            null,
-            true,
-            'Europe/Riga'
-    )
-
-    job.start();
-
-    socket.on('new-user', (player) => {
-        const {
-            name,
-            type,
-            roomId
-        } = player;
-
-        socket.join(roomId);
-        player.socketId = socket.id;
-
-        socket.to(roomId).broadcast.emit('user-connected', name);
-    })
-
     socket.on('disconnect', () => {
 
     })
 })
+module.exports = {
+  startGame,
+  gameDate
+}
