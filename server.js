@@ -50,8 +50,9 @@ async function startGame() {
 
         players[i].bot = false;
         players[i + 1].bot = false;
-       
+        console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
         if(!players[i].answer || !players[i + 1].answer) {
+          console.log('******************', players[i].answer, players[i + 1].answer)
           if(!players[i].answer) {
             players[i].answer = Math.random();
             players[i].bot = true;
@@ -71,7 +72,7 @@ async function startGame() {
           startRound()
         }, 60000)
       } else {
-        await db.collection('winners').insertOne(_.omit(players, ['_id', 'answer', 'bot']));
+        await db.collection('winners').insertOne(_.omit(...players, ['_id', 'answer', 'bot']));
         await db.collection('players').deleteMany({});
         io.emit('players', []);
         io.emit('Game finished', { winner: {...players[0]} });
