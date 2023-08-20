@@ -122,9 +122,10 @@ app.get('/players', async (req, res) => {
 
 app.get('/time', async (req, res) => {
   const {
-    gameStartHour
+    gameStartHour,
+    gameStartMinutes
   } = await db.collection('timer_settings').findOne({});
-  res.status(200).send({response: gameStartHour});
+  res.status(200).send({ gameStartHour, gameStartMinutes });
 })
 
 app.post('/time', async (req, res) => {

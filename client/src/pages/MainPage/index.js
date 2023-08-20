@@ -12,6 +12,7 @@ export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
   const [hours, setHours] = useState(22);
+  const [minutes, setMinutes] = useState(0);
   const [countdown, setCountdown] = useState();
   const [loading, setLoading] = useState(false);
 
@@ -31,8 +32,9 @@ export const MainPage = () => {
       mode: "cors", // no-cors, *cors, same-origin
     })
     const time = await response.json();
-    setHours(time.response);
-    setCountdown(new Date().setHours(time.response, 0, 0, 0));
+    setHours(time.gameStartHour);
+    setMinutes(time.gameStartMinutes);
+    setCountdown(new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0));
     setLoading(false);
   }, []);
 
@@ -93,7 +95,7 @@ export const MainPage = () => {
   ) : (
     <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
       <div style={{ fontSize: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>Start at {hours}:00</div>
+        <div style={{ fontSize: 28 }}>Початок о {hours}:{minutes}</div>
         {countdown && <Countdown
           overtime={Boolean(get(players, "length"))}
           date={
@@ -144,7 +146,7 @@ export const MainPage = () => {
               size="large"
               type="primary"
             >
-              Register
+              Прийняти участь
             </Button>
           )}
         </Space>
