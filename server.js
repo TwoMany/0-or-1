@@ -45,19 +45,19 @@ async function startGame() {
 
     const startRound = async() => {
       let players = await db.collection('players').find({}).toArray();
-
+      console.log('.........................',players.length, players.length - 1)
       for(let i = 0; i < players.length - 1; i+=2) {
 
         players[i].bot = false;
         players[i + 1].bot = false;
         console.log('---------------------', players[i].answer, players[i + 1].answer)
         if(!players[i].answer) {
-          players[i].answer = Math.random();
+          players[i].answer = Math.floor(Math.random());
           players[i].bot = true;
         }
 
         if(!players[i + 1].answer) {
-          players[i + 1].answer = Math.random();
+          players[i + 1].answer = Math.floor(Math.random());
           players[i + 1].bot = true;
         }
         console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
