@@ -33,13 +33,10 @@ async function startGame() {
   const players = await db.collection('players').find({}).toArray();
   const playersToDelete = [];
 
-  console.log('///////////////////', players.length, players)
-
   if(_.get(players, 'length') >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength);
 
-    console.log('+++++++++++++++++++++', arr.length, arr)
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
@@ -50,7 +47,6 @@ async function startGame() {
       let players = await db.collection('players').find({}).toArray();
 
       for(let i = 0; i < players.length - 1; i+=2) {
-        console.log('-------------------')
 
         players[i].bot = false;
         players[i + 1].bot = false;
@@ -75,7 +71,7 @@ async function startGame() {
           startRound()
         }, 60000)
       } else {
-        await db.collection('winners').insertOne(_.omit(players, '_id'));
+        await db.collection('winners').insertOne(_.omit(players, ['_id', 'answer', 'bot']));
         await db.collection('players').deleteMany({});
         io.emit('players', []);
         io.emit('Game finished', { winner: {...players[0]} });
@@ -91,7 +87,6 @@ async function startGame() {
   }
 }
 /// post anwser
-
 
 app.set('views', './views');
 app.set('view engine', 'ejs');
@@ -136,12 +131,10 @@ app.post('/time', async (req, res) => {
 
   const time = await db.collection('timer_settings').findOne({});
 
-  const updatedTime = await db.collection('timer_settings').updateOne({_id: _.get(time, '_id')}, {$set: {gameStartHour, gameStartMinutes}});
+  const updatedTime = await db.collection('timer_settings').updateOne({_id: _.get(time, '_id')}, {$set: {gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes}});
   
   res.status(200).send({response: updatedTime || null});
 })
-
-const rooms = { }
 
 
 app.post('/signup', async (req, res) => {
@@ -196,7 +189,6 @@ app.put('/user', async (req, res) => {
   }
 });
 
-
 app.post('/participate', async (req, res) => {
   const {
     _id,
@@ -226,9 +218,8 @@ io.on('connection', async socket => {
             true,
             'Europe/Riga'
     )
-    console.log('..................................', job)
+
     job.start();
-    console.log('11111111111111111111111111111111111', job)
 
     socket.on('new-user', (player) => {
         const {
