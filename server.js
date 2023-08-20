@@ -52,12 +52,12 @@ async function startGame() {
         players[i + 1].bot = false;
         console.log('---------------------', players[i].answer, players[i + 1].answer)
         if(!players[i].answer) {
-          players[i].answer = String(Math.ceil(Math.random()));
+          players[i].answer = String(Math.round(Math.random()));
           players[i].bot = true;
         }
 
         if(!players[i + 1].answer) {
-          players[i + 1].answer = String(Math.ceil(Math.random()));
+          players[i + 1].answer = String(Math.round(Math.random()));
           players[i + 1].bot = true;
         }
         console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
