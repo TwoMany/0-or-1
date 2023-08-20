@@ -18,11 +18,11 @@ const users = db.collection('users');
 
 const chooseRoundWinner = async(player1, player2) => {
 
-  if(_.isEqual(player1.answer, player2.answer) && (player1.answer && player2.answer)) {
+  if(_.isEqual(player1.answer, player2.answer)) {
     await db.collection('players').deleteOne({_id: player1._id})
     await db.collection('players').updateOne({_id: player2._id}, {$set: {answer: null}})
 
-  } else if(!_.isEqual(player1.answer, player2.answer) && (player1.answer && player2.answer)) {
+  } else if(!_.isEqual(player1.answer, player2.answer)) {
     await db.collection('players').deleteOne({_id: player2._id})
     await db.collection('players').updateOne({_id: player1._id}, {$set: {answer: null}})
   } 
@@ -52,12 +52,12 @@ async function startGame() {
         players[i + 1].bot = false;
         console.log('---------------------', players[i].answer, players[i + 1].answer)
         if(!players[i].answer) {
-          players[i].answer = Math.floor(Math.random());
+          players[i].answer = String(Math.ceil(Math.random()));
           players[i].bot = true;
         }
 
         if(!players[i + 1].answer) {
-          players[i + 1].answer = Math.floor(Math.random());
+          players[i + 1].answer = String(Math.ceil(Math.random()));
           players[i + 1].bot = true;
         }
         console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
