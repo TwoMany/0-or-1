@@ -16,13 +16,30 @@ const _ = require('lodash');
 
 const users = db.collection('users');
 
+const chooseRoundWinner = async(player1, player2) => {
+
+  if(_.isEqual(player1.answer, player2.answer) && (player1.answer && player2.answer)) {
+    await db.collection('players').deleteOne({_id: player1._id})
+    await db.collection('players').updateOne({_id: player2._id}, {$set: {answer: null}})
+
+  } else if(!_.isEqual(player1.answer, player2.answer) && (player1.answer && player2.answer)) {
+    await db.collection('players').deleteOne({_id: player2._id})
+    await db.collection('players').updateOne({_id: player1._id}, {$set: {answer: null}})
+  } 
+
+}
+
 async function startGame() {
   const players = await db.collection('players').find({}).toArray();
   const playersToDelete = [];
 
+  console.log('///////////////////', players.length, players)
+
   if(_.get(players, 'length') >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength);
+
+    console.log('+++++++++++++++++++++', arr.length, arr)
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
@@ -33,18 +50,22 @@ async function startGame() {
       let players = await db.collection('players').find({}).toArray();
 
       for(let i = 0; i < players.length - 1; i+=2) {
-        if(_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection('players').deleteOne({_id: players[i]._id})
-          await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
+        console.log('-------------------')
 
-        } else if(!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection('players').deleteOne({_id: players[i + 1]._id})
-          await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
-
-        } else {
-          await db.collection('players').deleteOne({_id: players[i].answer ? players[i + 1]._id : players[i]._id})
-          await db.collection('players').updateOne({_id: players[i].answer ? players[i]._id : players[i + 1]._id}, {$set: {answer: null}})
+        players[i].bot = false;
+        players[i + 1].bot = false;
+       
+        if(!players[i].answer || !players[i + 1].answer) {
+          if(!players[i].answer) {
+            players[i].answer = Math.random();
+            players[i].bot = true;
+          }
+          if(!players[i + 1].answer) {
+            players[i + 1].answer = Math.random();
+            players[i + 1].bot = true;
+          }
         }
+        await chooseRoundWinner(players[i], players[i + 1]);
       }
       players = await db.collection('players').find({}).toArray();
       io.emit('players', players);
@@ -104,6 +125,19 @@ app.get('/time', async (req, res) => {
     gameStartHour
   } = await db.collection('timer_settings').findOne({});
   res.status(200).send({response: gameStartHour});
+})
+
+app.post('/time', async (req, res) => {
+  const {
+    gameStartHour,
+    gameStartMinutes
+  } = req.body;
+
+  const time = await db.collection('timer_settings').findOne({});
+
+  const updatedTime = await db.collection('timer_settings').updateOne({_id: _.get(time, '_id')}, {$set: {gameStartHour, gameStartMinutes}});
+  
+  res.status(200).send({response: updatedTime || null});
 })
 
 const rooms = { }
@@ -168,7 +202,7 @@ app.post('/participate', async (req, res) => {
     login,
   } = req.body
 
- const player = await db.collection('players').insertOne({userId: _id, name: login, answer: null});
+ const player = await db.collection('players').insertOne({userId: _id, name: login, answer: null, bot: null});
  const players = await db.collection('players').find({}).toArray();
 
  io.emit('players', players);
@@ -179,10 +213,11 @@ server.listen(9000)
 
 io.on('connection', async socket => {
     const {
-        gameStartHour
+        gameStartHour,
+        gameStartMinutes
     } = await db.collection('timer_settings').findOne({});
 
-    const job = new CronJob(`0 ${gameStartHour} * * * *`,
+    const job = new CronJob(`${gameStartMinutes || 0} ${gameStartHour} * * * *`,
         async () => {
                 await startGame();
             },
