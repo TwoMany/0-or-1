@@ -50,18 +50,18 @@ async function startGame() {
 
         players[i].bot = false;
         players[i + 1].bot = false;
-        console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
-        if(!players[i].answer || !players[i + 1].answer) {
-          console.log('******************', players[i].answer, players[i + 1].answer)
-          if(!players[i].answer) {
-            players[i].answer = Math.random();
-            players[i].bot = true;
-          }
-          if(!players[i + 1].answer) {
-            players[i + 1].answer = Math.random();
-            players[i + 1].bot = true;
-          }
+        console.log('---------------------', players[i].answer, players[i + 1].answer)
+        if(!players[i].answer) {
+          players[i].answer = Math.random();
+          players[i].bot = true;
         }
+
+        if(!players[i + 1].answer) {
+          players[i + 1].answer = Math.random();
+          players[i + 1].bot = true;
+        }
+        console.log('+++++++++++++++++', players[i].answer, players[i + 1].answer)
+
         await chooseRoundWinner(players[i], players[i + 1]);
       }
       players = await db.collection('players').find({}).toArray();
