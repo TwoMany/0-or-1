@@ -1,21 +1,21 @@
-const { db } = require('./database_config');
-const express = require('express');
+const { db } = require("./database_config");
+const express = require("express");
 const app = express();
-const server = require('http').Server(app);
-const CronJob = require('cron').CronJob;
-const socketIO = require('socket.io');
+const server = require("http").Server(app);
+const CronJob = require("cron").CronJob;
+const socketIO = require("socket.io");
 const io = socketIO(server, {
   cors: {
-    origin: process.env.NODE_ENV == 'production' ? "https://server.illusiumgame.com" : "http://localhost:9000", 
-    methods: ["GET", "POST", "PUT", "DELETE"], 
-    //allowedHeaders: ["my-custom-header"], 
-  }
+    origin: process.env.NODE_ENV == "production" ? "https://server.illusiumgame.com" : "http://localhost:9000",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    //allowedHeaders: ["my-custom-header"],
+  },
 });
 
-const bodyParser = require('body-parser');
-const _ = require('lodash');
+const bodyParser = require("body-parser");
+const _ = require("lodash");
 
-const users = db.collection('users');
+const users = db.collection("users");
 const runningJobs = [];
 
 async function stopAllJobs() {
@@ -26,214 +26,211 @@ async function stopAllJobs() {
 }
 
 async function game() {
-  const {
-    gameStartHour,
-    gameStartMinutes
-  } = await db.collection('timer_settings').findOne({});
+  const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
 
-const job = new CronJob(`* ${gameStartMinutes} ${gameStartHour} * * *`,
+  const job = new CronJob(
+    `* ${gameStartMinutes} ${gameStartHour} * * *`,
     async () => {
-            await startGame();
-        },
-        null,
-        true,
-        'Europe/Riga'
-  )
+      await startGame();
+    },
+    null,
+    true,
+    "Europe/Riga"
+  );
 
   job.start();
   runningJobs.push(job);
 }
-game()
+game();
 
 async function startGame() {
-  const players = await db.collection('players').find({}).toArray();
+  const players = await db.collection("players").find({}).toArray();
   const playersToDelete = [];
 
-  if(_.get(players, 'length') >= 2) {
+  if (_.get(players, "length") >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength);
 
-
     playersToDelete.push(...players.slice(targetLength, players.length));
 
-    await db.collection('players').deleteMany({_id: {$in: playersToDelete.map(el=> el._id)}});
-    io.emit('losers', playersToDelete.map(el=> el._id));
-    io.emit('players', arr);
+    await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+    io.emit(
+      "losers",
+      playersToDelete.map((el) => el._id)
+    );
+    io.emit("players", arr);
 
-    const startRound = async() => {
-      let players = await db.collection('players').find({}).toArray();
-      for(let i = 0; i < players.length - 1; i+=2) {
-
+    const startRound = async () => {
+      let players = await db.collection("players").find({}).toArray();
+      for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
         players[i + 1].bot = false;
 
-        if(!players[i].answer) {
+        if (!players[i].answer) {
           players[i].answer = String(Math.round(Math.random()));
           players[i].bot = true;
         }
 
-        if(!players[i + 1].answer) {
+        if (!players[i + 1].answer) {
           players[i + 1].answer = String(Math.round(Math.random()));
           players[i + 1].bot = true;
         }
 
-        if(_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection('players').deleteOne({_id: players[i]._id})
-          await db.collection('players').updateOne({_id: players[i + 1]._id}, {$set: {answer: null}})
-      
-        } else if(!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection('players').deleteOne({_id: players[i + 1]._id})
-          await db.collection('players').updateOne({_id: players[i]._id}, {$set: {answer: null}})
-        } 
-
+        if (_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection("players").deleteOne({ _id: players[i]._id });
+          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
+        } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection("players").deleteOne({ _id: players[i + 1]._id });
+          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
+        }
       }
-      players = await db.collection('players').find({}).toArray();
-      io.emit('players', players);
+      players = await db.collection("players").find({}).toArray();
+      io.emit("players", players);
 
-      if(players.length > 1) {
-        setTimeout(async()=>{
-          startRound()
-        }, 60000)
+      if (players.length > 1) {
+        setTimeout(async () => {
+          startRound();
+        }, 60000);
       } else if (players.length == 1) {
-
-        await db.collection('winners').insertOne(_.omit(...players, ['_id', 'answer', 'bot']));
-        await db.collection('players').deleteMany({});
-        io.emit('players', []);
-        io.emit('game_finished', { winner: {...players[0]} });
+        await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
+        await db.collection("players").deleteMany({});
+        io.emit("players", []);
+        io.emit("game_finished", { winner: { ...players[0] } });
       }
-    }
+    };
 
-    setTimeout(async()=>{
-      startRound()
-    }, 60000)
-
+    setTimeout(async () => {
+      startRound();
+    }, 60000);
   } else {
-    io.emit('start_game_failed', 'Игра не началась, недостаточное колличество игроков!')
+    io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
   }
 }
 /// post anwser
 
-app.set('views', './views');
-app.set('view engine', 'ejs');
-app.use(express.static('public'));
+app.set("views", "./views");
+app.set("view engine", "ejs");
+app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
 app.use(bodyParser.json());
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== "production") {
+    res.header("Access-Control-Allow-Origin", "*"); // Разрешить доступ для всех доменов
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Разрешенные HTTP-методы
+    next();
+  }
+});
 
-app.post('/answer', async (req, res) => {
-  const {
-    userId,
-    answer,
-  } = req.body;
+app.post("/answer", async (req, res) => {
+  const { userId, answer } = req.body;
 
-  await db.collection('players').updateOne({userId: userId}, {$set: {answer: answer}});
-  const players = await db.collection('players').find({}).toArray();
-  io.emit('players', players);
-  res.status(200).send({response: players});
-})
+  await db.collection("players").updateOne({ userId: userId }, { $set: { answer: answer } });
+  const players = await db.collection("players").find({}).toArray();
+  io.emit("players", players);
+  res.status(200).send({ response: players });
+});
 
-app.get('/players', async (req, res) => {
-  const players = await db.collection('players').find({}).toArray();
-  io.emit('players', players);
-  res.status(200).send({response: players});
-})
+app.get("/players", async (req, res) => {
+  const players = await db.collection("players").find({}).toArray();
+  io.emit("players", players);
+  res.status(200).send({ response: players });
+});
 
-app.get('/time', async (req, res) => {
-  const {
-    gameStartHour,
-    gameStartMinutes
-  } = await db.collection('timer_settings').findOne({});
+app.get("/time", async (req, res) => {
+  const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
   res.status(200).send({ gameStartHour, gameStartMinutes });
-})
+});
 
-app.post('/time', async (req, res) => {
-  const {
-    gameStartHour,
-    gameStartMinutes
-  } = req.body;
+app.post("/time", async (req, res) => {
+  const { gameStartHour, gameStartMinutes } = req.body;
 
-  const time = await db.collection('timer_settings').findOne({});
+  const time = await db.collection("timer_settings").findOne({});
 
-  const updatedTime = await db.collection('timer_settings').updateOne({_id: _.get(time, '_id')}, {$set: {gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes}});
+  const updatedTime = await db
+    .collection("timer_settings")
+    .updateOne(
+      { _id: _.get(time, "_id") },
+      { $set: { gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes } }
+    );
 
   await stopAllJobs();
   await game();
-  
-  res.status(200).send({response: updatedTime || null});
-})
 
+  res.status(200).send({ response: updatedTime || null });
+});
 
-app.post('/signup', async (req, res) => {
+app.post("/signup", async (req, res) => {
   const { login, phone, password } = req.body;
 
   await users.insertOne({
-    login, phone, password
+    login,
+    phone,
+    password,
   });
 
-  const insertedClient = await users.findOne({login, phone, password});
+  const insertedClient = await users.findOne({ login, phone, password });
 
-  if(insertedClient) {
-    res.status(200).send({ response: `User ${insertedClient.login} was created`});
+  if (insertedClient) {
+    res.status(200).send({ response: `User ${insertedClient.login} was created` });
   } else {
     res.status(400).send({ response: `User does not created` });
   }
 });
 
-app.post('/signin', async (req, res) => {
+app.post("/signin", async (req, res) => {
   const { phone, password } = req.body;
-  const userData = await users.findOne({phone, password})
-  
-  if(userData) {
-    const response = _.omit(userData, 'password');
+  const userData = await users.findOne({ phone, password });
+
+  if (userData) {
+    const response = _.omit(userData, "password");
     res.status(200).send({ response });
   } else {
-    res.status(400).send({error: 'Invalid credentials'});
+    res.status(400).send({ error: "Invalid credentials" });
   }
 });
 
-app.put('/user', async (req, res) => {
+app.put("/user", async (req, res) => {
   const { _id, card, password } = req.body;
 
   const o_id = new ObjectId(_id);
-  const userData = await users.findOne({_id: o_id});
+  const userData = await users.findOne({ _id: o_id });
 
   let response = undefined;
-  if(password && userData && userData.password != password) {
-    response = await users.findOneAndUpdate({_id: o_id},{ $set: { password } }, { returnOriginal: true });
+  if (password && userData && userData.password != password) {
+    response = await users.findOneAndUpdate({ _id: o_id }, { $set: { password } }, { returnOriginal: true });
   }
 
-  if(card) {
-    response = await users.findOneAndUpdate({_id: o_id}, { $set: { card }}, { returnOriginal: true });
+  if (card) {
+    response = await users.findOneAndUpdate({ _id: o_id }, { $set: { card } }, { returnOriginal: true });
   }
 
-  response = _.omit(_.get(response, 'value', {}), 'password');
+  response = _.omit(_.get(response, "value", {}), "password");
 
-  if(response && _.get(response, '_id')) {
+  if (response && _.get(response, "_id")) {
     res.status(200).send({ response: response });
   } else {
-    res.status(400).send({ response: 'Something went wrong' });
+    res.status(400).send({ response: "Something went wrong" });
   }
 });
 
-app.post('/participate', async (req, res) => {
-  const {
-    _id,
-    login,
-  } = req.body
+app.post("/participate", async (req, res) => {
+  const { _id, login } = req.body;
 
- const player = await db.collection('players').insertOne({userId: _id, name: login, answer: null, bot: null});
- const players = await db.collection('players').find({}).toArray();
+  const player = await db.collection("players").insertOne({ userId: _id, name: login, answer: null, bot: null });
+  const players = await db.collection("players").find({}).toArray();
 
- io.emit('players', players);
+  io.emit("players", players);
 
- res.status(200).send({response: player});
-})
-server.listen(9000)
+  res.status(200).send({ response: player });
+});
+server.listen(9000);
 
-io.on('connection', async socket => {
-    socket.on('disconnect', () => {
-
-    })
-})
+io.on("connection", async (socket) => {
+  socket.on("disconnect", () => {});
+});

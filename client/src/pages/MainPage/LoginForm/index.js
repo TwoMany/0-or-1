@@ -26,7 +26,8 @@ export const LoginForm = ({setUser}) => {
         } else {
           postData("/signup", values).then((data) => {
             notification.success({message: 'Successfully'})
-            setIsLogin(true)
+            // setIsLogin(true)
+            setUser(data.response);
           });
         }
       }}

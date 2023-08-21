@@ -17,9 +17,9 @@ export const MainPage = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchPlayers = useCallback(async () => {
-    const response = await fetch("https://server.illusiumgame.com/players", {
+    const response = await fetch(process.env.REACT_APP_ENVIRONMENT === 'production' ? "https://server.illusiumgame.com/players" : 'http://localhost:9000/players', {
       method: "GET", // *GET, POST, PUT, DELETE, etc.
-      mode: "cors", // no-cors, *cors, same-origin
+      mode: process.env.REACT_APP_ENVIRONMENT === 'production' ? "cors" : undefined, // no-cors, *cors, same-origin
     });
     const players = await response.json();
     setPlayers(players.response);
@@ -27,9 +27,9 @@ export const MainPage = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
-    const response = await fetch("https://server.illusiumgame.com/time", {
+    const response = await fetch(process.env.REACT_APP_ENVIRONMENT === 'production' ? "https://server.illusiumgame.com/time" : 'http://localhost:9000/time', {
       method: "GET", // *GET, POST, PUT, DELETE, etc.
-      mode: "cors", // no-cors, *cors, same-origin
+      mode: process.env.REACT_APP_ENVIRONMENT === 'production' ? "cors" : undefined, // no-cors, *cors, same-origin
     })
     const time = await response.json();
     setHours(time.gameStartHour);

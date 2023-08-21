@@ -1,6 +1,7 @@
 import { Button, Layout } from "antd";
 import { MainPage } from "./pages/MainPage";
 import { Content, Header } from "antd/es/layout/layout";
+import { LogoutOutlined } from "@ant-design/icons"
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
               localStorage.removeItem("user");
               window.location.reload();
             }}
+            icon={<LogoutOutlined />}
           />
         </Header>
         <Content style={{ padding: "12px 24px", minHeight: 280 }}>
