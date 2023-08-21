@@ -2,10 +2,11 @@ const { db } = require('./database_config');
 const express = require('express');
 const app = express();
 const server = require('http').Server(app);
+const CronJob = require('cron').CronJob;
 const socketIO = require('socket.io');
 const io = socketIO(server, {
   cors: {
-    origin: process.env.NODE_ENV == 'production' ? "https://server.illusiumgame.com" : "http://localhost:10000", 
+    origin: process.env.NODE_ENV == 'production' ? "https://server.illusiumgame.com" : "http://localhost:9000", 
     methods: ["GET", "POST", "PUT", "DELETE"], 
     //allowedHeaders: ["my-custom-header"], 
   }
@@ -15,10 +16,34 @@ const bodyParser = require('body-parser');
 const _ = require('lodash');
 
 const users = db.collection('users');
+const runningJobs = [];
 
-async function gameDate() {
-  return await db.collection('timer_settings').findOne({});
+async function stopAllJobs() {
+  for (const job of runningJobs) {
+    job.stop();
+  }
+  runningJobs.length = 0;
 }
+
+async function game() {
+  const {
+    gameStartHour,
+    gameStartMinutes
+  } = await db.collection('timer_settings').findOne({});
+
+const job = new CronJob(`* ${gameStartMinutes} ${gameStartHour} * * *`,
+    async () => {
+            await startGame();
+        },
+        null,
+        true,
+        'Europe/Riga'
+  )
+
+  job.start();
+  runningJobs.push(job);
+}
+game()
 
 async function startGame() {
   const players = await db.collection('players').find({}).toArray();
@@ -32,6 +57,7 @@ async function startGame() {
     playersToDelete.push(...players.slice(targetLength, players.length));
 
     await db.collection('players').deleteMany({_id: {$in: playersToDelete.map(el=> el._id)}});
+    io.emit('losers', playersToDelete.map(el=> el._id));
     io.emit('players', arr);
 
     const startRound = async() => {
@@ -69,11 +95,11 @@ async function startGame() {
           startRound()
         }, 60000)
       } else if (players.length == 1) {
-        
+
         await db.collection('winners').insertOne(_.omit(...players, ['_id', 'answer', 'bot']));
         await db.collection('players').deleteMany({});
         io.emit('players', []);
-        io.emit('Game finished', { winner: {...players[0]} });
+        io.emit('game_finished', { winner: {...players[0]} });
       }
     }
 
@@ -82,7 +108,7 @@ async function startGame() {
     }, 60000)
 
   } else {
-    io.emit('Start game failed', 'Игра не началась, недостаточное колличество игроков!')
+    io.emit('start_game_failed', 'Игра не началась, недостаточное колличество игроков!')
   }
 }
 /// post anwser
@@ -131,6 +157,9 @@ app.post('/time', async (req, res) => {
   const time = await db.collection('timer_settings').findOne({});
 
   const updatedTime = await db.collection('timer_settings').updateOne({_id: _.get(time, '_id')}, {$set: {gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes}});
+
+  await stopAllJobs();
+  await game();
   
   res.status(200).send({response: updatedTime || null});
 })
@@ -208,7 +237,3 @@ io.on('connection', async socket => {
 
     })
 })
-module.exports = {
-  startGame,
-  gameDate
-}
