@@ -17,20 +17,30 @@ export const MainPage = () => {
   const [loading, setLoading] = useState(false);
 
   const fetchPlayers = useCallback(async () => {
-    const response = await fetch(process.env.REACT_APP_ENVIRONMENT === 'production' ? "https://server.illusiumgame.com/players" : 'http://localhost:9000/players', {
-      method: "GET", // *GET, POST, PUT, DELETE, etc.
-      mode: process.env.REACT_APP_ENVIRONMENT === 'production' ? "cors" : undefined, // no-cors, *cors, same-origin
-    });
+    const response = await fetch(
+      process.env.REACT_APP_ENVIRONMENT === "production"
+        ? "https://server.illusiumgame.com/players"
+        : "http://localhost:9000/players",
+      {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
+      }
+    );
     const players = await response.json();
     setPlayers(players.response);
     setLoading(false);
   }, []);
 
   const fetchData = useCallback(async () => {
-    const response = await fetch(process.env.REACT_APP_ENVIRONMENT === 'production' ? "https://server.illusiumgame.com/time" : 'http://localhost:9000/time', {
-      method: "GET", // *GET, POST, PUT, DELETE, etc.
-      mode: process.env.REACT_APP_ENVIRONMENT === 'production' ? "cors" : undefined, // no-cors, *cors, same-origin
-    })
+    const response = await fetch(
+      process.env.REACT_APP_ENVIRONMENT === "production"
+        ? "https://server.illusiumgame.com/time"
+        : "http://localhost:9000/time",
+      {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
+      }
+    );
     const time = await response.json();
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
@@ -94,22 +104,30 @@ export const MainPage = () => {
     </div>
   ) : (
     <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
-      <div style={{ fontSize: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 28 }}>Початок о {hours}:{minutes}</div>
-        {countdown && <Countdown
-          overtime={Boolean(get(players, "length"))}
-          date={
-            dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
-              ? dayjs().startOf("minute").valueOf() + 60000
-              : countdown
-          }
-          onComplete={() => {
-            fetchPlayers();
-          }}
-        />}
-      </div>
+      {user && (
+        <div style={{ fontSize: 24, textAlign: "center" }}>
+          <div style={{ fontSize: 28 }}>
+            Початок о {hours}:{minutes}
+          </div>
+          {countdown && (
+            <Countdown
+              overtime={Boolean(get(players, "length"))}
+              date={
+                dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
+                  ? dayjs().startOf("minute").valueOf() + 60000
+                  : countdown
+              }
+              onComplete={() => {
+                fetchPlayers();
+              }}
+            />
+          )}
+        </div>
+      )}
 
-      {Boolean(get(players, "length")) && <ReactPlayer url="https://www.youtube.com/watch?v=9HUdWJnTF24" />}
+      {Boolean(get(players, "length")) && player && (
+        <ReactPlayer loop url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+      )}
 
       {user ? (
         <Space direction="vertical" align="center">

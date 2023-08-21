@@ -2,7 +2,7 @@ import { Input, Form, Space, Button, notification } from "antd";
 import { useState } from "react";
 import { postData } from "../../../tools";
 
-export const LoginForm = ({setUser}) => {
+export const LoginForm = ({ setUser }) => {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
@@ -14,32 +14,36 @@ export const LoginForm = ({setUser}) => {
       wrapperCol={{
         span: 16,
       }}
-      style={{
-        maxWidth: 600,
-      }}
+      style={
+        {
+          // width: 800,
+        }
+      }
       onFinish={(values) => {
         if (isLogin) {
           postData("/signin", values).then((data) => {
             console.log(data);
             setUser(data.response);
+            window.location.reload();
           });
         } else {
           postData("/signup", values).then((data) => {
-            notification.success({message: 'Successfully'})
+            notification.success({ message: "Successfully" });
             // setIsLogin(true)
             setUser(data.response);
+            window.location.reload();
           });
         }
       }}
     >
       {!isLogin && (
         <Form.Item
-          label="Login"
+          label="Логін"
           name="login"
           rules={[
             {
               required: true,
-              message: "Please input your login!",
+              message: "Введіть логін!",
             },
           ]}
         >
@@ -47,12 +51,12 @@ export const LoginForm = ({setUser}) => {
         </Form.Item>
       )}
       <Form.Item
-        label="Phone"
+        label="Телефон"
         name="phone"
         rules={[
           {
             required: true,
-            message: "Please input your phone!",
+            message: "Введіть телефон!",
           },
         ]}
       >
@@ -60,12 +64,12 @@ export const LoginForm = ({setUser}) => {
       </Form.Item>
 
       <Form.Item
-        label="Password"
+        label="Пароль"
         name="password"
         rules={[
           {
             required: true,
-            message: "Please input your password!",
+            message: "Введіть пароль!",
           },
         ]}
       >
@@ -74,18 +78,18 @@ export const LoginForm = ({setUser}) => {
 
       <Form.Item
         wrapperCol={{
-          offset: 8,
-          span: 16,
+          offset: 4,
+          span: 20,
         }}
       >
         <Space>
           {isLogin ? (
-            <Button onClick={() => setIsLogin(false)}>Sign Up</Button>
+            <Button onClick={() => setIsLogin(false)}>Реєстрація</Button>
           ) : (
-            <Button onClick={() => setIsLogin(true)}>Sign In</Button>
+            <Button onClick={() => setIsLogin(true)}>Вхід</Button>
           )}
           <Button type="primary" htmlType="submit">
-            Submit
+            Гаразд
           </Button>
         </Space>
       </Form.Item>
