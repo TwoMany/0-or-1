@@ -1,4 +1,4 @@
-const { db } = require("./database_config");
+const { db, ObjectId } = require("./database_config");
 const express = require("express");
 const app = express();
 const server = require("http").Server(app);

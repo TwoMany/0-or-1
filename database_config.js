@@ -21,5 +21,6 @@ async function run() {
 run().catch(console.dir);
 
 module.exports = {
-  db: client.db('47Database')
+  db: client.db('47Database'),
+  ObjectId
 };
