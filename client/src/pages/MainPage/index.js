@@ -1,4 +1,4 @@
-import { Button, Space, Spin } from "antd";
+import { Button, Space, Spin, Layout, notification } from "antd";
 import Countdown from "react-countdown";
 import { LoginForm } from "./LoginForm";
 import { postData } from "../../tools";
@@ -7,14 +7,19 @@ import { socket } from "../../socket";
 import * as dayjs from "dayjs";
 import { get, isEqual } from "lodash";
 import ReactPlayer from "react-player";
+import { Content, Header } from "antd/es/layout/layout";
+import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
+  const [winner, setWinner] = useState();
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
   const [countdown, setCountdown] = useState();
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const fetchPlayers = useCallback(async () => {
     const response = await fetch(
@@ -76,6 +81,28 @@ export const MainPage = () => {
     };
   }, [players]);
 
+  useEffect(() => {
+    function onGameFinish(value) {
+      setWinner(value);
+    }
+    socket.on("game_finished", onGameFinish);
+    return () => {
+      socket.off("game_finished", onGameFinish);
+    };
+  }, [winner]);
+
+  useEffect(() => {
+    function onLose(value = []) {
+      if (value.includes(user._id)) {
+        notification.error({ message: "Проиграл" });
+      }
+    }
+    socket.on("losers", onLose);
+    return () => {
+      socket.off("losers", onLose);
+    };
+  }, [user]);
+
   const handleSendAnswer = useCallback(
     (answer) => {
       postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
@@ -91,86 +118,117 @@ export const MainPage = () => {
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
-  return loading ? (
-    <div
-      style={{
-        margin: "20px 0",
-        marginBottom: 20,
-        padding: "30px 50px",
-        textAlign: "center",
-      }}
-    >
-      <Spin />
-    </div>
-  ) : (
-    <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
-      {user && (
-        <div style={{ fontSize: 24, textAlign: "center" }}>
-          <div style={{ fontSize: 28 }}>
-            Початок о {hours}:{minutes}
-          </div>
-          {countdown && (
-            <Countdown
-              overtime={Boolean(get(players, "length"))}
-              date={
-                dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
-                  ? dayjs().startOf("minute").valueOf() + 60000
-                  : countdown
-              }
-              onComplete={() => {
-                fetchPlayers();
-              }}
-            />
-          )}
-        </div>
-      )}
-
-      {Boolean(get(players, "length")) && player && (
-        <ReactPlayer loop url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
-      )}
-
-      {user ? (
-        <Space direction="vertical" align="center">
-          <div>
-            {user.login} | {get(players, "length")} учасників
-          </div>
-          {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
-            <>
-              <div style={{ display: "flex", justifyContent: "space-between", minWidth: 280, gap: 24 }}>
-                <div>
-                  {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"}){" "}
-                  {playerIndex % 2 === 0 ? "загадує" : "розгадує"}
-                </div>
-                <div>
-                  {oponent.name} ({oponent.answer !== null && player.answer !== null ? oponent.answer : "?"}){" "}
-                  {oponentIndex % 2 === 0 ? "загадує" : "розгадує"}
-                </div>
-              </div>
-              {!get(players, `[${playerIndex}].answer`) && (
-                <Space.Compact block>
-                  <Button onClick={() => handleSendAnswer(0)}>0</Button>
-                  <Button onClick={() => handleSendAnswer(1)}>1</Button>
-                </Space.Compact>
-              )}
-            </>
-          ) : (
+  return (
+    <Layout>
+      <Header style={{ display: "flex", alignItems: "center" }}>
+        {localStorage.getItem("user") && (
+          <Space>
             <Button
-              disabled={
-                player || dayjs(countdown).diff(dayjs(), "minute") > 5 || dayjs(countdown).diff(dayjs(), "minute") < 0
-              }
               onClick={() => {
-                postData("/participate", user).then((data) => {});
+                navigate("/profile");
               }}
-              size="large"
-              type="primary"
-            >
-              Прийняти участь
-            </Button>
-          )}
-        </Space>
-      ) : (
-        <LoginForm setUser={setUser} />
-      )}
-    </Space>
+              icon={<UserOutlined />}
+            />
+            <Button
+              disabled={!localStorage.getItem("user")}
+              onClick={() => {
+                localStorage.removeItem("user");
+                window.location.reload();
+              }}
+              icon={<LogoutOutlined />}
+            />
+          </Space>
+        )}
+      </Header>
+      <Content style={{ padding: "12px 24px", minHeight: 280 }}>
+        {loading ? (
+          <div
+            style={{
+              margin: "20px 0",
+              marginBottom: 20,
+              padding: "30px 50px",
+              textAlign: "center",
+            }}
+          >
+            <Spin />
+          </div>
+        ) : (
+          <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
+            {user && (
+              <div style={{ fontSize: 24, textAlign: "center" }}>
+                <div style={{ fontSize: 28 }}>
+                  Начало о {hours}:{minutes}
+                </div>
+                {countdown && (
+                  <Countdown
+                    overtime={Boolean(get(players, "length"))}
+                    date={
+                      dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
+                        ? dayjs().startOf("minute").valueOf() + 60000
+                        : countdown
+                    }
+                    onComplete={() => {
+                      fetchPlayers();
+                    }}
+                  />
+                )}
+              </div>
+            )}
+
+            {winner && <h2>Победитель {winner.login}</h2>}
+
+            {Boolean(get(players, "length")) && player && (
+              <ReactPlayer loop url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+            )}
+
+            {user ? (
+              <Space direction="vertical" align="center">
+                <div>
+                  {user.login} | {get(players, "length")} участников
+                </div>
+                {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", minWidth: 280, gap: 24 }}>
+                      <div>
+                        {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"}){" "}
+                        {playerIndex % 2 === 0 ? "загадывает" : "разгадывает"}
+                      </div>
+                      <div>
+                        {oponent.name} {oponent.bot ? "(BOT)" : ""} (
+                        {oponent.answer !== null && player.answer !== null ? oponent.answer : "?"}){" "}
+                        {oponentIndex % 2 === 0 ? "загадывает" : "разгадывает"}
+                      </div>
+                    </div>
+                    {!get(players, `[${playerIndex}].answer`) && (
+                      <Space.Compact block>
+                        <Button onClick={() => handleSendAnswer(0)}>0</Button>
+                        <Button onClick={() => handleSendAnswer(1)}>1</Button>
+                      </Space.Compact>
+                    )}
+                  </>
+                ) : (
+                  <Button
+                    disabled={
+                      player ||
+                      dayjs(countdown).diff(dayjs(), "minute") > 5 ||
+                      dayjs(countdown).diff(dayjs(), "minute") < 0
+                    }
+                    onClick={() => {
+                      postData("/participate", user).then((data) => {});
+                    }}
+                    size="large"
+                    type="primary"
+                  >
+                    Принять участие
+                  </Button>
+                )}
+              </Space>
+            ) : (
+              <LoginForm setUser={setUser} />
+            )}
+          </Space>
+        )}
+      </Content>
+    </Layout>
   );
 };

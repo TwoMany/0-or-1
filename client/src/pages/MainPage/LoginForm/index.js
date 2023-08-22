@@ -8,15 +8,10 @@ export const LoginForm = ({ setUser }) => {
   return (
     <Form
       name="login"
-      labelCol={{
-        span: 8,
-      }}
-      wrapperCol={{
-        span: 16,
-      }}
+      layout="vertical"
       style={
         {
-          // width: 800,
+          maxWidth: 800,
         }
       }
       onFinish={(values) => {
@@ -36,14 +31,15 @@ export const LoginForm = ({ setUser }) => {
         }
       }}
     >
+      {isLogin ? <h2>Логин</h2> : <h2>Регистрация</h2>}
       {!isLogin && (
         <Form.Item
-          label="Логін"
+          label="Логин"
           name="login"
           rules={[
             {
               required: true,
-              message: "Введіть логін!",
+              message: "Введите логин!",
             },
           ]}
         >
@@ -56,7 +52,7 @@ export const LoginForm = ({ setUser }) => {
         rules={[
           {
             required: true,
-            message: "Введіть телефон!",
+            message: "Введите телефон!",
           },
         ]}
       >
@@ -69,27 +65,22 @@ export const LoginForm = ({ setUser }) => {
         rules={[
           {
             required: true,
-            message: "Введіть пароль!",
+            message: "Введите пароль!",
           },
         ]}
       >
         <Input.Password />
       </Form.Item>
 
-      <Form.Item
-        wrapperCol={{
-          offset: 4,
-          span: 20,
-        }}
-      >
+      <Form.Item>
         <Space>
           {isLogin ? (
-            <Button onClick={() => setIsLogin(false)}>Реєстрація</Button>
+            <Button type="text" onClick={() => setIsLogin(false)}>Регистрация</Button>
           ) : (
-            <Button onClick={() => setIsLogin(true)}>Вхід</Button>
+            <Button type="text" onClick={() => setIsLogin(true)}>Вход</Button>
           )}
           <Button type="primary" htmlType="submit">
-            Гаразд
+            {isLogin ? "Войти" : "Зарегистрироваться"}
           </Button>
         </Space>
       </Form.Item>
