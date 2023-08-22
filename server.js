@@ -120,9 +120,9 @@ app.use(
 app.use(bodyParser.json());
 app.use((req, res, next) => {
   if (process.env.NODE_ENV !== "production") {
-    res.header("Access-Control-Allow-Origin", "*"); // Разрешить доступ для всех доменов
+    res.header("Access-Control-Allow-Origin", "*"); 
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Разрешенные HTTP-методы
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); 
     next();
   }
 });
@@ -172,6 +172,9 @@ app.post("/signup", async (req, res) => {
     login,
     phone,
     password,
+    isAdmin,
+    credit,
+    crypto
   });
 
   const insertedClient = await users.findOne({ login, phone, password });
@@ -196,7 +199,7 @@ app.post("/signin", async (req, res) => {
 });
 
 app.put("/user", async (req, res) => {
-  const { _id, card, password } = req.body;
+  const { _id, card, password, credit, crypto } = req.body;
 
   const o_id = new ObjectId(_id);
   const userData = await users.findOne({ _id: o_id });
@@ -208,6 +211,14 @@ app.put("/user", async (req, res) => {
 
   if (card) {
     response = await users.findOneAndUpdate({ _id: o_id }, { $set: { card } }, { returnOriginal: true });
+  }
+
+  if (credit) {
+    response = await users.findOneAndUpdate({ _id: o_id }, { $set: { credit } }, { returnOriginal: true });
+  }
+
+  if (crypto) {
+    response = await users.findOneAndUpdate({ _id: o_id }, { $set: { credit } }, { returnOriginal: true });
   }
 
   response = _.omit(_.get(response, "value", {}), "password");
