@@ -166,15 +166,15 @@ app.post("/time", async (req, res) => {
 });
 
 app.post("/signup", async (req, res) => {
-  const { login, phone, password } = req.body;
+  const { login, phone, password, credit, crypto } = req.body;
 
   await users.insertOne({
     login,
     phone,
     password,
-    isAdmin,
-    credit,
-    crypto
+    isAdmin: false,
+    credit: credit || '',
+    crypto: crypto || ''
   });
 
   const insertedClient = await users.findOne({ login, phone, password });
