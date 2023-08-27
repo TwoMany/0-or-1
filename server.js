@@ -18,6 +18,9 @@ const _ = require("lodash");
 const users = db.collection("users");
 const runningJobs = [];
 
+const defaultHour = 22;
+const defaultMinutes = 0;
+
 async function stopAllJobs() {
   for (const job of runningJobs) {
     job.stop();
@@ -26,20 +29,25 @@ async function stopAllJobs() {
 }
 
 async function game() {
-  const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
+  try {
+    const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
 
-  const job = new CronJob(
-    `* ${gameStartMinutes} ${gameStartHour} * * *`,
-    async () => {
-      await startGame();
-    },
-    null,
-    true,
-    "Europe/Riga"
-  );
+    const job = new CronJob(
+      `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
+      async () => {
+        await startGame();
+      },
+      null,
+      true,
+      "Europe/Riga"
+    );
 
-  job.start();
-  runningJobs.push(job);
+    job.start();
+    runningJobs.push(job);
+    
+  } catch (error) {
+    console.log(error);
+  }
 }
 game();
 
