@@ -150,6 +150,45 @@ app.get("/players", async (req, res) => {
   res.status(200).send({ response: players });
 });
 
+app.get("/users", async (req, res) => {
+  var users;
+
+  if(_.get(req, 'query._id')) {
+    users = await db.collection("users").findOne({_id: new ObjectId(req.query._id)});
+  } else {
+    users = await db.collection("users").find({}).toArray();
+  }
+  res.status(200).send({ response: users });
+});
+
+app.get("/videos", async (req, res) => {
+
+  const vids = await db.collection("videos").find({}).toArray();
+  
+  res.status(200).send({ response: vids });
+});
+
+app.post("/videos", async (req, res) => {
+  const {
+    name,
+    link
+  } = req.body;
+
+  const insertedVid = await db.collection("videos").insertOne({name: name || '', link: link});
+  
+  res.status(200).send({ response: insertedVid });
+});
+
+app.delete("/videos", async (req, res) => {
+  const {
+    _id
+  } = req.body;
+
+  const deletedVid = await db.collection("videos").deleteOne({_id: new ObjectId(_id)});
+  
+  res.status(200).send({ response: deletedVid });
+});
+
 app.get("/time", async (req, res) => {
   const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
   res.status(200).send({ gameStartHour, gameStartMinutes });
