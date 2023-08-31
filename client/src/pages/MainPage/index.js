@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import { socket } from "../../socket";
 import * as dayjs from "dayjs";
 import { get, isEqual } from "lodash";
-import ReactPlayer from "react-player";
 import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -26,7 +25,8 @@ export const MainPage = () => {
 
   const fetchPlayers = useCallback(async () => {
     if (loadingPlayers) return;
-    setLoadingPlayers(true);
+    
+    // setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
         ? "https://server.illusiumgame.com/players"
@@ -39,7 +39,7 @@ export const MainPage = () => {
     const players = await response.json();
     setPlayers(players.response);
     setLoadingPlayers(false);
-  }, []);
+  }, [loadingPlayers]);
 
   const fetchVideos = useCallback(async () => {
     const response = await fetch(
