@@ -10,6 +10,7 @@ import ReactPlayer from "react-player";
 import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import YouTube from "react-youtube";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
@@ -18,13 +19,13 @@ export const MainPage = () => {
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
   const [countdown, setCountdown] = useState();
-  const [loadingPlayers, setLoadingPlayers] = useState(false);  
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [ videos, setVideos] = useState([]);
+  const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
 
   const fetchPlayers = useCallback(async () => {
-    if(loadingPlayers) return;
+    if (loadingPlayers) return;
     setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
@@ -51,11 +52,11 @@ export const MainPage = () => {
       }
     );
     const videos = await response.json();
-    setPlayers(players.videos);
+    setVideos(videos.response);
   }, []);
 
   const fetchData = useCallback(async () => {
-    if(loadingData) return;
+    if (loadingData) return;
     setLoadingData(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
@@ -138,6 +139,27 @@ export const MainPage = () => {
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
+  const opts = {
+    height: "390",
+    width: "640",
+    playerVars: {
+      // https://developers.google.com/youtube/player_parameters
+      autoplay: 1,
+      loop: 1,
+    },
+  };
+
+  const onReady = (event) => {
+    // access to player in all event handlers via event.target
+    event.target.mute();
+  };
+
+  const diff = countdown ? dayjs().diff(dayjs(countdown), 'minute') : 0;
+
+  const videoId = get(videos, `[${ videos.length ? diff % videos.length : 0}].link`)
+
+  console.log(videoId, diff % videos.length || 1)
+
   return (
     <Layout>
       <Header style={{ display: "flex", alignItems: "center" }}>
@@ -197,8 +219,14 @@ export const MainPage = () => {
 
             {winner && <h2>Победитель {winner.login}</h2>}
 
-            {Boolean(get(players, "length")) && player && (
-              <ReactPlayer loop url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+            {videoId 
+            && Boolean(get(players, "length")) && player 
+            && (
+              <YouTube
+                videoId={videoId}
+                opts={opts}
+                onReady={onReady}
+              />
             )}
 
             {user ? (
