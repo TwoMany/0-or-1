@@ -18,10 +18,14 @@ export const MainPage = () => {
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
   const [countdown, setCountdown] = useState();
-  const [loading, setLoading] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);  
+  const [loadingData, setLoadingData] = useState(false);
+  const [ videos, setVideos] = useState([]);
   const navigate = useNavigate();
 
   const fetchPlayers = useCallback(async () => {
+    if(loadingPlayers) return;
+    setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
         ? "https://server.illusiumgame.com/players"
@@ -33,10 +37,26 @@ export const MainPage = () => {
     );
     const players = await response.json();
     setPlayers(players.response);
-    setLoading(false);
+    setLoadingPlayers(false);
+  }, []);
+
+  const fetchVideos = useCallback(async () => {
+    const response = await fetch(
+      process.env.REACT_APP_ENVIRONMENT === "production"
+        ? "https://server.illusiumgame.com/videos"
+        : "http://localhost:9000/videos",
+      {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
+      }
+    );
+    const videos = await response.json();
+    setPlayers(players.videos);
   }, []);
 
   const fetchData = useCallback(async () => {
+    if(loadingData) return;
+    setLoadingData(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
         ? "https://server.illusiumgame.com/time"
@@ -50,13 +70,13 @@ export const MainPage = () => {
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
     setCountdown(new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0));
-    setLoading(false);
+    setLoadingData(false);
   }, []);
 
   useEffect(() => {
-    setLoading(true);
     fetchPlayers();
     fetchData();
+    fetchVideos();
   }, []);
 
   useEffect(() => {
@@ -141,7 +161,7 @@ export const MainPage = () => {
         )}
       </Header>
       <Content style={{ padding: "12px 24px", minHeight: 280 }}>
-        {loading ? (
+        {loadingPlayers || loadingData ? (
           <div
             style={{
               margin: "20px 0",
