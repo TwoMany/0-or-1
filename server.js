@@ -105,12 +105,10 @@ async function startGame(roundInterval) {
       }
       players = await db.collection("players").find({}).toArray();
       io.emit("players", players);
-
-      setTimeout(() => {
-        startGame(roundInterval);
-      }, roundInterval);
-
     }
+    setTimeout(() => {
+      startGame(roundInterval);
+    }, roundInterval);
 
   } else {
     io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
