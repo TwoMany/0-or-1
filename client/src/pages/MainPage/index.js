@@ -20,12 +20,13 @@ export const MainPage = () => {
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [youtubePlayer, setYoutubePlayer] = useState();
   const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
 
   const fetchPlayers = useCallback(async () => {
     if (loadingPlayers) return;
-    
+
     // setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
@@ -114,7 +115,7 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onLose(value = []) {
-      console.log(value)
+      console.log(value);
       if (value.includes(user._id)) {
         notification.error({ message: "Проиграл" });
       }
@@ -127,11 +128,13 @@ export const MainPage = () => {
 
   const handleSendAnswer = useCallback(
     (answer) => {
+      youtubePlayer.setVolume(100);
+                        youtubePlayer.playVideo();
       postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
         console.log(data);
       });
     },
-    [user]
+    [user, youtubePlayer]
   );
 
   const playerIndex = (players || []).findIndex(({ userId }) => get(user, "_id") === userId);
@@ -152,12 +155,13 @@ export const MainPage = () => {
 
   const onReady = (event) => {
     // access to player in all event handlers via event.target
-    event.target.mute();
+    event.target.pauseVideo();
+    setYoutubePlayer(event.target);
   };
 
-  const diff = countdown ? dayjs().diff(dayjs(countdown), 'minute') : 0;
+  const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
 
-  const videoId = get(videos, `[${ videos.length ? diff % videos.length : 0}].link`)
+  const videoId = get(videos, `[${videos.length ? diff % videos.length : 0}].link`);
 
   return (
     <Layout>
@@ -178,6 +182,14 @@ export const MainPage = () => {
               }}
               icon={<LogoutOutlined />}
             />
+            <Button
+              onClick={() => {
+                youtubePlayer.setVolume(100);
+                youtubePlayer.playVideo();
+              }}
+            >
+              AAA
+            </Button>
           </Space>
         )}
       </Header>
@@ -209,6 +221,10 @@ export const MainPage = () => {
                         : countdown
                     }
                     onComplete={() => {
+                      if (youtubePlayer && player) {
+                        youtubePlayer.setVolume(100);
+                        youtubePlayer.playVideo();
+                      }
                       fetchPlayers();
                     }}
                   />
@@ -218,13 +234,16 @@ export const MainPage = () => {
 
             {winner && <h2>Победитель {winner.name}</h2>}
 
-            {videoId 
-            && Boolean(get(players, "length")) && player 
-            && (
+            {videoId && (
+              // && Boolean(get(players, "length")) && player
               <YouTube
                 videoId={videoId}
                 opts={opts}
                 onReady={onReady}
+                onStateChange={(event) => {
+                  console.log(event);
+                  setYoutubePlayer(event.target);
+                }}
               />
             )}
 
@@ -261,6 +280,8 @@ export const MainPage = () => {
                       dayjs(countdown).diff(dayjs(), "minute") < 0
                     }
                     onClick={() => {
+                      youtubePlayer.setVolume(100);
+                        youtubePlayer.playVideo();
                       postData("/participate", user).then((data) => {});
                     }}
                     size="large"
