@@ -60,14 +60,14 @@ async function startGame() {
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
-    const startRound = async () => {
+    await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+    io.emit(
+      "losers",
+      playersToDelete.map((el) => el._id)
+    );
+    io.emit("players", arr);
 
-      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-      io.emit(
-        "losers",
-        playersToDelete.map((el) => el._id)
-      );
-      io.emit("players", arr);
+    const startRound = async () => {
 
       let players = await db.collection("players").find({}).toArray();
       for (let i = 0; i < players.length - 1; i += 2) {
