@@ -37,7 +37,6 @@ async function game() {
       async () => {
         await startGame();
       },
-      null,
       true,
       "Europe/Riga"
     );
@@ -54,21 +53,21 @@ game();
 async function startGame() {
   const players = await db.collection("players").find({}).toArray();
   const playersToDelete = [];
-  console.log('+++++++++++++++++++++++++++++++++++++', players.length);
+
   if (_.get(players, "length") >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength);
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
-    const startRound = async () => {
+    await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+    io.emit(
+      "losers",
+      playersToDelete.map((el) => el._id)
+    );
+    io.emit("players", arr);
 
-      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-      io.emit(
-        "losers",
-        playersToDelete.map((el) => el._id)
-      );
-      io.emit("players", arr);
+    const startRound = async () => {
 
       let players = await db.collection("players").find({}).toArray();
       for (let i = 0; i < players.length - 1; i += 2) {
@@ -280,14 +279,23 @@ app.put("/user", async (req, res) => {
 
 app.post("/participate", async (req, res) => {
   const { _id, login } = req.body;
+  const playerData = { userId: _id, name: login, answer: null, bot: null };
 
-  const player = await db.collection("players").insertOne({ userId: _id, name: login, answer: null, bot: null });
-  const players = await db.collection("players").find({}).toArray();
+  try {
+    await db.collection("players").insertOne(playerData);
+  
+    const updatedPlayers = await db.collection("players").find({}).toArray();
+    console.log(updatedPlayers);
+    io.emit("players", updatedPlayers);
+    
+    res.status(200).send({ response: playerData });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ response: "Error occurred while adding a player" });
+  }
 
-  io.emit("players", players);
-
-  res.status(200).send({ response: player });
 });
+
 server.listen(9000);
 
 io.on("connection", async (socket) => {
