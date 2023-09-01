@@ -62,53 +62,51 @@ async function startGame() {
     const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
 
-    if (_.get(players, "length") >= 2 || finalPair) {
+    if (players.length == 1 && finalPair) {
+      await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
+      await db.collection("players").deleteMany({});
+      io.emit("players", []);
+      io.emit("game_finished", { winner: { ...players[0] } });
+    }
 
-      if (players.length == 1) {
-        await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
-        await db.collection("players").deleteMany({});
-        io.emit("players", []);
-        io.emit("game_finished", { winner: { ...players[0] } });
+    if (_.get(players, "length") >= 2) {
+      const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
+      const arr = players.slice(0, targetLength);
 
-      } else {
-        const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-        const arr = players.slice(0, targetLength);
+      playersToDelete.push(...players.slice(targetLength, players.length));
 
-        playersToDelete.push(...players.slice(targetLength, players.length));
+      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+      io.emit(
+        "losers",
+        playersToDelete.map((el) => el._id)
+      );
+      io.emit("players", arr);
 
-        await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-        io.emit(
-          "losers",
-          playersToDelete.map((el) => el._id)
-        );
-        io.emit("players", arr);
+      for (let i = 0; i < players.length - 1; i += 2) {
+        players[i].bot = false;
+        players[i + 1].bot = false;
 
-        for (let i = 0; i < players.length - 1; i += 2) {
-          players[i].bot = false;
-          players[i + 1].bot = false;
-
-          if (!players[i].answer) {
-            players[i].answer = String(Math.round(Math.random()));
-            players[i].bot = true;
-          }
-
-          if (!players[i + 1].answer) {
-            players[i + 1].answer = String(Math.round(Math.random()));
-            players[i + 1].bot = true;
-          }
-
-          if (_.isEqual(players[i].answer, players[i + 1].answer)) {
-            await db.collection("players").deleteOne({ _id: players[i]._id });
-            await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
-          } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
-            await db.collection("players").deleteOne({ _id: players[i + 1]._id });
-            await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
-          }
+        if (!players[i].answer) {
+          players[i].answer = String(Math.round(Math.random()));
+          players[i].bot = true;
         }
-        let eventPlayers = await db.collection("players").find({}).toArray();
-        finalPair = eventPlayers.length == 2 ? true : false;
-        io.emit("players", eventPlayers);
+
+        if (!players[i + 1].answer) {
+          players[i + 1].answer = String(Math.round(Math.random()));
+          players[i + 1].bot = true;
+        }
+
+        if (_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection("players").deleteOne({ _id: players[i]._id });
+          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
+        } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
+          await db.collection("players").deleteOne({ _id: players[i + 1]._id });
+          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
+        }
       }
+      let eventPlayers = await db.collection("players").find({}).toArray();
+      finalPair = eventPlayers.length == 1 ? true : false;
+      io.emit("players", eventPlayers);
 
     } else {
       io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
