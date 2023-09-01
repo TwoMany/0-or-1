@@ -17,7 +17,6 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var timeout, gameTimeout, roundCount = 0;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -33,12 +32,14 @@ async function game() {
   try {
     const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
 
+    const roundInterval = 60000; 
+
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
-        setTimeout(() => {
-          startGame();
-        }, 60000);
+        setInterval(() => {
+          startGame(); 
+        }, roundInterval);
       },
       null,
       true,
@@ -52,18 +53,16 @@ async function game() {
     console.log(error);
   }
 }
+
 game();
 
 async function startGame() {
-  const roundTimer = setInterval(async () => {
-    roundCount++;
-    const players = await db.collection("players").find({}).toArray();
+  const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
 
     if (_.get(players, "length") >= 2) {
 
-      if (roundCount > Math.log2(players.length)) {
-        clearInterval(roundTimer);
+      if (players.length == 1) {
         await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
         await db.collection("players").deleteMany({});
         io.emit("players", []);
@@ -113,8 +112,6 @@ async function startGame() {
     } else {
       io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
     }
-
-  }, 60000);
 }
 /// post anwser
 
