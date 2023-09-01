@@ -17,7 +17,7 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var roundCount = 0;
+var timeout, gameTimeout, roundCount = 0;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -55,12 +55,12 @@ async function game() {
 game();
 
 async function startGame() {
-  const players = await db.collection("players").find({}).toArray();
-  const playersToDelete = [];
+  const roundTimer = setInterval(async () => {
+    roundCount++;
+    const players = await db.collection("players").find({}).toArray();
+    const playersToDelete = [];
 
-  if (_.get(players, "length") >= 2) {
-    const roundTimer = setInterval(async () => {
-      roundCount++;
+    if (_.get(players, "length") >= 2) {
 
       if (roundCount > Math.log2(players.length)) {
         clearInterval(roundTimer);
@@ -109,11 +109,12 @@ async function startGame() {
         io.emit("players", players);
 
       }
-    }, 60000);
 
-  } else {
-    io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
-  }
+    } else {
+      io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
+    }
+
+  }, 60000);
 }
 /// post anwser
 
