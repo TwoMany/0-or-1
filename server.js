@@ -17,7 +17,6 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var timeout;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -38,7 +37,7 @@ async function game() {
       async () => {
         await startGame();
       },
-      undefined,
+      null,
       true,
       "Europe/Riga"
     );
@@ -97,13 +96,8 @@ async function startGame() {
       io.emit("players", players);
 
       if (players.length > 1) {
-
-        if(timeout){
-          clearTimeout(timeout);
-        }
-        
-        timeout = setTimeout(async () => {
-          startRound();
+        setTimeout(async () => {
+          startGame();
         }, 60000);
       } else if (players.length == 1) {
         await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
@@ -114,9 +108,6 @@ async function startGame() {
     };
 
     setTimeout(async () => {
-      if(timeout){
-        clearTimeout(timeout);
-      }
       startRound();
     }, 60000);
   } else {
