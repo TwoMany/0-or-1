@@ -6,10 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 import { socket } from "../../socket";
 import * as dayjs from "dayjs";
 import { get, isEqual } from "lodash";
-import ReactPlayer from "react-player";
 import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import YouTube from "react-youtube";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
@@ -18,10 +18,15 @@ export const MainPage = () => {
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
   const [countdown, setCountdown] = useState();
-  const [loading, setLoading] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
 
   const fetchPlayers = useCallback(async () => {
+    if (loadingPlayers) return;
+    
+    // setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
         ? "https://server.illusiumgame.com/players"
@@ -33,10 +38,26 @@ export const MainPage = () => {
     );
     const players = await response.json();
     setPlayers(players.response);
-    setLoading(false);
+    setLoadingPlayers(false);
+  }, [loadingPlayers]);
+
+  const fetchVideos = useCallback(async () => {
+    const response = await fetch(
+      process.env.REACT_APP_ENVIRONMENT === "production"
+        ? "https://server.illusiumgame.com/videos"
+        : "http://localhost:9000/videos",
+      {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
+      }
+    );
+    const videos = await response.json();
+    setVideos(videos.response);
   }, []);
 
   const fetchData = useCallback(async () => {
+    if (loadingData) return;
+    setLoadingData(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
         ? "https://server.illusiumgame.com/time"
@@ -50,13 +71,13 @@ export const MainPage = () => {
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
     setCountdown(new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0));
-    setLoading(false);
+    setLoadingData(false);
   }, []);
 
   useEffect(() => {
-    setLoading(true);
     fetchPlayers();
     fetchData();
+    fetchVideos();
   }, []);
 
   useEffect(() => {
@@ -118,6 +139,27 @@ export const MainPage = () => {
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
+  const opts = {
+    height: "390",
+    width: "640",
+    playerVars: {
+      // https://developers.google.com/youtube/player_parameters
+      autoplay: 1,
+      loop: 1,
+    },
+  };
+
+  const onReady = (event) => {
+    // access to player in all event handlers via event.target
+    event.target.mute();
+  };
+
+  const diff = countdown ? dayjs().diff(dayjs(countdown), 'minute') : 0;
+
+  const videoId = get(videos, `[${ videos.length ? diff % videos.length : 0}].link`)
+
+  console.log(videoId, diff % videos.length || 1)
+
   return (
     <Layout>
       <Header style={{ display: "flex", alignItems: "center" }}>
@@ -141,7 +183,7 @@ export const MainPage = () => {
         )}
       </Header>
       <Content style={{ padding: "12px 24px", minHeight: 280 }}>
-        {loading ? (
+        {loadingPlayers || loadingData ? (
           <div
             style={{
               margin: "20px 0",
@@ -177,8 +219,14 @@ export const MainPage = () => {
 
             {winner && <h2>Победитель {winner.login}</h2>}
 
-            {Boolean(get(players, "length")) && player && (
-              <ReactPlayer loop url="https://www.youtube.com/watch?v=9HUdWJnTF24" />
+            {videoId 
+            && Boolean(get(players, "length")) && player 
+            && (
+              <YouTube
+                videoId={videoId}
+                opts={opts}
+                onReady={onReady}
+              />
             )}
 
             {user ? (
