@@ -129,7 +129,7 @@ export const MainPage = () => {
   const handleSendAnswer = useCallback(
     (answer) => {
       youtubePlayer.setVolume(100);
-                        youtubePlayer.playVideo();
+      youtubePlayer.playVideo();
       postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
         console.log(data);
       });
@@ -234,8 +234,7 @@ export const MainPage = () => {
 
             {winner && <h2>Победитель {winner.name}</h2>}
 
-            {videoId && (
-              && Boolean(get(players, "length")) && player
+            {videoId && Boolean(get(players, "length")) && player && (
               <YouTube
                 videoId={videoId}
                 opts={opts}
