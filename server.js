@@ -21,6 +21,7 @@ const runningJobs = [];
 const defaultHour = 22;
 const defaultMinutes = 0;
 const roundInterval = 60000;
+var cronTimeout, gameTimeout;
 
 async function stopAllJobs() {
   for (const job of runningJobs) {
@@ -36,7 +37,10 @@ async function game() {
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
-        setInterval(() => {
+        if (cronTimeout) {
+          clearTimeout(cronTimeout)
+        }
+        cronTimeout = setTimeout(() => {
           startGame(roundInterval);
         }, roundInterval);
       },
@@ -110,7 +114,10 @@ async function startGame(roundInterval) {
   } else {
     io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
   }
-  setTimeout(() => {
+  if (gameTimeout) {
+    clearTimeout(gameTimeout)
+  }
+  gameTimeout = setTimeout(() => {
     startGame(roundInterval);
   }, roundInterval);
 }
