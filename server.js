@@ -21,7 +21,7 @@ const runningJobs = [];
 const defaultHour = 22;
 const defaultMinutes = 0;
 const roundInterval = 60000;
-var gameRunning = false;
+var gameRunning = false, finalPair = false;
 
 async function stopAllJobs() {
   for (const job of runningJobs) {
@@ -62,7 +62,7 @@ async function startGame() {
     const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
 
-    if (_.get(players, "length") >= 2) {
+    if (_.get(players, "length") >= 2 || finalPair) {
 
       if (players.length == 1) {
         await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
@@ -71,7 +71,6 @@ async function startGame() {
         io.emit("game_finished", { winner: { ...players[0] } });
 
       } else {
-        let players = await db.collection("players").find({}).toArray();
         const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
         const arr = players.slice(0, targetLength);
 
@@ -106,8 +105,9 @@ async function startGame() {
             await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
           }
         }
-        players = await db.collection("players").find({}).toArray();
-        io.emit("players", players);
+        let eventPlayers = await db.collection("players").find({}).toArray();
+        finalPair = eventPlayers.length == 2 ? true : false;
+        io.emit("players", eventPlayers);
       }
 
     } else {
