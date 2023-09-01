@@ -17,7 +17,7 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var roundCount = 0, cronCount = 0;
+var roundCount = 0;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -37,8 +37,6 @@ async function game() {
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
         setTimeout(() => {
-          cronCount++;
-          console.log('cronCount cronCount', cronCount)
           startGame();
         }, 60000);
       },
@@ -63,8 +61,6 @@ async function startGame() {
   if (_.get(players, "length") >= 2) {
     const roundTimer = setInterval(async () => {
       roundCount++;
-
-      let players = await db.collection("players").find({}).toArray();
 
       if (roundCount > Math.log2(players.length)) {
         clearInterval(roundTimer);
