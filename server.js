@@ -17,6 +17,7 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
+var timeout, gameTimeout;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -34,8 +35,13 @@ async function game() {
 
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
-      async () => {
-        await startGame();
+      () => {
+        if(gameTimeout) {
+          clearTimeout(gameTimeout);
+        }
+       gameTimeout = setTimeout(() => {
+        startGame();
+        }, 60000);
       },
       null,
       true,
@@ -96,7 +102,10 @@ async function startGame() {
       io.emit("players", players);
 
       if (players.length > 1) {
-        setTimeout(async () => {
+        if(timeout) {
+          clearTimeout(timeout);
+        }
+       timeout = setTimeout(async () => {
           startGame();
         }, 60000);
       } else if (players.length == 1) {
@@ -106,10 +115,7 @@ async function startGame() {
         io.emit("game_finished", { winner: { ...players[0] } });
       }
     };
-
-    setTimeout(async () => {
-      startRound();
-    }, 60000);
+    startRound();
   } else {
     io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
   }
