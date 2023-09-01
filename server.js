@@ -54,21 +54,22 @@ game();
 async function startGame() {
   const players = await db.collection("players").find({}).toArray();
   const playersToDelete = [];
-
+  console.log('+++++++++++++++++++++++++++++++++++++', players.length);
   if (_.get(players, "length") >= 2) {
     const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
     const arr = players.slice(0, targetLength);
 
     playersToDelete.push(...players.slice(targetLength, players.length));
 
-    await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-    io.emit(
-      "losers",
-      playersToDelete.map((el) => el._id)
-    );
-    io.emit("players", arr);
-
     const startRound = async () => {
+
+      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+      io.emit(
+        "losers",
+        playersToDelete.map((el) => el._id)
+      );
+      io.emit("players", arr);
+
       let players = await db.collection("players").find({}).toArray();
       for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
