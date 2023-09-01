@@ -68,6 +68,7 @@ async function startGame() {
       await db.collection("players").deleteMany({});
       io.emit("players", []);
       io.emit("game_finished", { winner: { ...players[0] } });
+      return;
     }
 
     if (_.get(players, "length") >= 2) {
