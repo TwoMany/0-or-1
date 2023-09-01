@@ -17,7 +17,7 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var timeout, gameTimeout;
+var timeout, gameTimeout, roundCount = 0;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -36,11 +36,11 @@ async function game() {
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
-        if(gameTimeout) {
+        if (gameTimeout) {
           clearTimeout(gameTimeout);
         }
-       gameTimeout = setTimeout(() => {
-        startGame();
+        gameTimeout = setTimeout(() => {
+          startGame();
         }, 60000);
       },
       null,
@@ -50,7 +50,7 @@ async function game() {
 
     job.start();
     runningJobs.push(job);
-    
+
   } catch (error) {
     console.log(error);
   }
@@ -62,61 +62,58 @@ async function startGame() {
   const playersToDelete = [];
 
   if (_.get(players, "length") >= 2) {
+    const roundTimer = setInterval(async () => {
+      roundCount++;
 
-    const startRound = async () => {
-      let players = await db.collection("players").find({}).toArray();
-      const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-      const arr = players.slice(0, targetLength);
-  
-      playersToDelete.push(...players.slice(targetLength, players.length));
-  
-      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-      io.emit(
-        "losers",
-        playersToDelete.map((el) => el._id)
-      );
-      io.emit("players", arr);
-
-      for (let i = 0; i < players.length - 1; i += 2) {
-        players[i].bot = false;
-        players[i + 1].bot = false;
-
-        if (!players[i].answer) {
-          players[i].answer = String(Math.round(Math.random()));
-          players[i].bot = true;
-        }
-
-        if (!players[i + 1].answer) {
-          players[i + 1].answer = String(Math.round(Math.random()));
-          players[i + 1].bot = true;
-        }
-
-        if (_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection("players").deleteOne({ _id: players[i]._id });
-          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
-        } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection("players").deleteOne({ _id: players[i + 1]._id });
-          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
-        }
-      }
-      players = await db.collection("players").find({}).toArray();
-      io.emit("players", players);
-
-      if (players.length > 1) {
-        if(timeout) {
-          clearTimeout(timeout);
-        }
-       timeout = setTimeout(async () => {
-          startRound();
-        }, 60000);
-      } else if (players.length == 1) {
+      if (roundCount > Math.log2(players.length)) {
+        clearInterval(roundTimer);
         await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
         await db.collection("players").deleteMany({});
         io.emit("players", []);
         io.emit("game_finished", { winner: { ...players[0] } });
+
+      } else {
+        let players = await db.collection("players").find({}).toArray();
+        const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
+        const arr = players.slice(0, targetLength);
+
+        playersToDelete.push(...players.slice(targetLength, players.length));
+
+        await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+        io.emit(
+          "losers",
+          playersToDelete.map((el) => el._id)
+        );
+        io.emit("players", arr);
+
+        for (let i = 0; i < players.length - 1; i += 2) {
+          players[i].bot = false;
+          players[i + 1].bot = false;
+
+          if (!players[i].answer) {
+            players[i].answer = String(Math.round(Math.random()));
+            players[i].bot = true;
+          }
+
+          if (!players[i + 1].answer) {
+            players[i + 1].answer = String(Math.round(Math.random()));
+            players[i + 1].bot = true;
+          }
+
+          if (_.isEqual(players[i].answer, players[i + 1].answer)) {
+            await db.collection("players").deleteOne({ _id: players[i]._id });
+            await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
+          } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
+            await db.collection("players").deleteOne({ _id: players[i + 1]._id });
+            await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
+          }
+        }
+        players = await db.collection("players").find({}).toArray();
+        io.emit("players", players);
+
       }
-    };
-    startRound();
+    }, 60000);
+
   } else {
     io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
   }
@@ -160,8 +157,8 @@ app.get("/players", async (req, res) => {
 app.get("/users", async (req, res) => {
   var users;
 
-  if(_.get(req, 'query._id')) {
-    users = await db.collection("users").findOne({_id: new ObjectId(req.query._id)});
+  if (_.get(req, 'query._id')) {
+    users = await db.collection("users").findOne({ _id: new ObjectId(req.query._id) });
   } else {
     users = await db.collection("users").find({}).toArray();
   }
@@ -171,7 +168,7 @@ app.get("/users", async (req, res) => {
 app.get("/videos", async (req, res) => {
 
   const vids = await db.collection("videos").find({}).toArray();
-  
+
   res.status(200).send({ response: vids });
 });
 
@@ -181,8 +178,8 @@ app.post("/videos", async (req, res) => {
     link
   } = req.body;
 
-  const insertedVid = await db.collection("videos").insertOne({name: name || '', link: link});
-  
+  const insertedVid = await db.collection("videos").insertOne({ name: name || '', link: link });
+
   res.status(200).send({ response: insertedVid });
 });
 
@@ -191,8 +188,8 @@ app.delete("/videos", async (req, res) => {
     _id
   } = req.body;
 
-  const deletedVid = await db.collection("videos").deleteOne({_id: new ObjectId(_id)});
-  
+  const deletedVid = await db.collection("videos").deleteOne({ _id: new ObjectId(_id) });
+
   res.status(200).send({ response: deletedVid });
 });
 
@@ -297,5 +294,5 @@ app.post("/participate", async (req, res) => {
 server.listen(9000);
 
 io.on("connection", async (socket) => {
-  socket.on("disconnect", () => {});
+  socket.on("disconnect", () => { });
 });
