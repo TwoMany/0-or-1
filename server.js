@@ -37,6 +37,7 @@ async function game() {
       async () => {
         await startGame();
       },
+      null,
       true,
       "Europe/Riga"
     );
@@ -68,7 +69,6 @@ async function startGame() {
     io.emit("players", arr);
 
     const startRound = async () => {
-
       let players = await db.collection("players").find({}).toArray();
       for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
@@ -279,23 +279,14 @@ app.put("/user", async (req, res) => {
 
 app.post("/participate", async (req, res) => {
   const { _id, login } = req.body;
-  const playerData = { userId: _id, name: login, answer: null, bot: null };
 
-  try {
-    await db.collection("players").insertOne(playerData);
-  
-    const updatedPlayers = await db.collection("players").find({}).toArray();
-    console.log(updatedPlayers);
-    io.emit("players", updatedPlayers);
-    
-    res.status(200).send({ response: playerData });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ response: "Error occurred while adding a player" });
-  }
+  const player = await db.collection("players").insertOne({ userId: _id, name: login, answer: null, bot: null });
+  const players = await db.collection("players").find({}).toArray();
 
+  io.emit("players", players);
+
+  res.status(200).send({ response: player });
 });
-
 server.listen(9000);
 
 io.on("connection", async (socket) => {
