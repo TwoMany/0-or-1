@@ -20,7 +20,7 @@ const runningJobs = [];
 
 const defaultHour = 22;
 const defaultMinutes = 0;
-var roundCount = 0;
+const roundInterval = 60000;
 
 async function stopAllJobs() {
   for (const job of runningJobs) {
@@ -33,13 +33,11 @@ async function game() {
   try {
     const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
 
-    const roundInterval = 60000;
-
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
         setInterval(() => {
-          startGame();
+          startGame(roundInterval);
         }, roundInterval);
       },
       null,
@@ -57,13 +55,13 @@ async function game() {
 
 game();
 
-async function startGame() {
+async function startGame(roundInterval) {
   const players = await db.collection("players").find({}).toArray();
   const playersToDelete = [];
-  roundCount++;
+
   if (_.get(players, "length") >= 2) {
 
-    if (roundCount >= Math.log2(players.length)) {
+    if (players.length == 1) {
       await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
       await db.collection("players").deleteMany({});
       io.emit("players", []);
@@ -107,6 +105,10 @@ async function startGame() {
       }
       players = await db.collection("players").find({}).toArray();
       io.emit("players", players);
+
+      setTimeout(() => {
+        startGame(roundInterval);
+      }, roundInterval);
 
     }
 
