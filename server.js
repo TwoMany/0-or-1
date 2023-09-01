@@ -21,7 +21,7 @@ const runningJobs = [];
 const defaultHour = 22;
 const defaultMinutes = 0;
 const roundInterval = 60000;
-var cronTimeout, gameTimeout;
+var gameRunning = false;
 
 async function stopAllJobs() {
   for (const job of runningJobs) {
@@ -37,12 +37,10 @@ async function game() {
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
-        if (cronTimeout) {
-          clearTimeout(cronTimeout)
+        if (!gameRunning) {
+          gameRunning = true;
+          startGame();
         }
-        cronTimeout = setTimeout(() => {
-          startGame(roundInterval);
-        }, roundInterval);
       },
       null,
       true,
@@ -59,66 +57,62 @@ async function game() {
 
 game();
 
-async function startGame(roundInterval) {
-  const players = await db.collection("players").find({}).toArray();
-  const playersToDelete = [];
+async function startGame() {
+  setInterval(async () => {
+    const players = await db.collection("players").find({}).toArray();
+    const playersToDelete = [];
 
-  if (_.get(players, "length") >= 2) {
+    if (_.get(players, "length") >= 2) {
 
-    if (players.length == 1) {
-      await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
-      await db.collection("players").deleteMany({});
-      io.emit("players", []);
-      io.emit("game_finished", { winner: { ...players[0] } });
+      if (players.length == 1) {
+        await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
+        await db.collection("players").deleteMany({});
+        io.emit("players", []);
+        io.emit("game_finished", { winner: { ...players[0] } });
+
+      } else {
+        let players = await db.collection("players").find({}).toArray();
+        const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
+        const arr = players.slice(0, targetLength);
+
+        playersToDelete.push(...players.slice(targetLength, players.length));
+
+        await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+        io.emit(
+          "losers",
+          playersToDelete.map((el) => el._id)
+        );
+        io.emit("players", arr);
+
+        for (let i = 0; i < players.length - 1; i += 2) {
+          players[i].bot = false;
+          players[i + 1].bot = false;
+
+          if (!players[i].answer) {
+            players[i].answer = String(Math.round(Math.random()));
+            players[i].bot = true;
+          }
+
+          if (!players[i + 1].answer) {
+            players[i + 1].answer = String(Math.round(Math.random()));
+            players[i + 1].bot = true;
+          }
+
+          if (_.isEqual(players[i].answer, players[i + 1].answer)) {
+            await db.collection("players").deleteOne({ _id: players[i]._id });
+            await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
+          } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
+            await db.collection("players").deleteOne({ _id: players[i + 1]._id });
+            await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
+          }
+        }
+        players = await db.collection("players").find({}).toArray();
+        io.emit("players", players);
+      }
 
     } else {
-      let players = await db.collection("players").find({}).toArray();
-      const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-      const arr = players.slice(0, targetLength);
-
-      playersToDelete.push(...players.slice(targetLength, players.length));
-
-      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-      io.emit(
-        "losers",
-        playersToDelete.map((el) => el._id)
-      );
-      io.emit("players", arr);
-
-      for (let i = 0; i < players.length - 1; i += 2) {
-        players[i].bot = false;
-        players[i + 1].bot = false;
-
-        if (!players[i].answer) {
-          players[i].answer = String(Math.round(Math.random()));
-          players[i].bot = true;
-        }
-
-        if (!players[i + 1].answer) {
-          players[i + 1].answer = String(Math.round(Math.random()));
-          players[i + 1].bot = true;
-        }
-
-        if (_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection("players").deleteOne({ _id: players[i]._id });
-          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
-        } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          await db.collection("players").deleteOne({ _id: players[i + 1]._id });
-          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
-        }
-      }
-      players = await db.collection("players").find({}).toArray();
-      io.emit("players", players);
+      io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
     }
-
-  } else {
-    io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
-  }
-  if (gameTimeout) {
-    clearTimeout(gameTimeout)
-  }
-  gameTimeout = setTimeout(() => {
-    startGame(roundInterval);
   }, roundInterval);
 }
 /// post anwser
