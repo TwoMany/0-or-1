@@ -17,7 +17,7 @@ const _ = require("lodash");
 
 const users = db.collection("users");
 const runningJobs = [];
-var timeout, gameTimeout, roundCount = 0;
+var roundCount = 0;
 
 const defaultHour = 22;
 const defaultMinutes = 0;
@@ -36,10 +36,7 @@ async function game() {
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
-        if (gameTimeout) {
-          clearTimeout(gameTimeout);
-        }
-        gameTimeout = setTimeout(() => {
+        setTimeout(() => {
           startGame();
         }, 60000);
       },
