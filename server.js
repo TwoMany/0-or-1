@@ -56,17 +56,24 @@ async function startGame() {
   const playersToDelete = [];
 
   if (_.get(players, "length") >= 2) {
-    const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-    const arr = players.slice(0, targetLength);
 
-    playersToDelete.push(...players.slice(targetLength, players.length));
-
-    await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-    io.emit(
-      "losers",
-      playersToDelete.map((el) => el._id)
-    );
-    io.emit("players", arr);
+    io.on('distribute', async(allow) => {
+      console.log('allow', allow);
+      if(allow) {
+        const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
+        const arr = players.slice(0, targetLength);
+  
+        playersToDelete.push(...players.slice(targetLength, players.length));
+  
+        await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+        console.log('-------------------------------', players.length, targetLength, arr, playersToDelete);
+        io.emit(
+          "losers",
+          playersToDelete.map((el) => el._id)
+        );
+        io.emit("players", arr);
+      }
+    })
 
     const startRound = async () => {
       let players = await db.collection("players").find({}).toArray();
@@ -98,6 +105,7 @@ async function startGame() {
       if (players.length > 1) {
         setTimeout(async () => {
           startRound();
+          io.emit('distribute', true);
         }, 60000);
       } else if (players.length == 1) {
         await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
@@ -109,6 +117,7 @@ async function startGame() {
 
     setTimeout(async () => {
       startRound();
+      io.emit('distribute', true);
     }, 60000);
   } else {
     io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
