@@ -58,11 +58,12 @@ async function game() {
 game();
 
 async function startGame() {
-  setInterval(async () => {
+ const gameInterval = setInterval(async () => {
     const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
 
     if (players.length == 1 && finalPair) {
+      clearInterval(gameInterval);
       await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
       await db.collection("players").deleteMany({});
       io.emit("players", []);
