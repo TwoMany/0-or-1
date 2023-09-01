@@ -235,7 +235,7 @@ export const MainPage = () => {
             {winner && <h2>Победитель {winner.name}</h2>}
 
             {videoId && (
-              // && Boolean(get(players, "length")) && player
+              && Boolean(get(players, "length")) && player
               <YouTube
                 videoId={videoId}
                 opts={opts}
@@ -280,8 +280,8 @@ export const MainPage = () => {
                       dayjs(countdown).diff(dayjs(), "minute") < 0
                     }
                     onClick={() => {
-                      youtubePlayer.setVolume(100);
-                        youtubePlayer.playVideo();
+                      // youtubePlayer.setVolume(100);
+                      //   youtubePlayer.playVideo();
                       postData("/participate", user).then((data) => {});
                     }}
                     size="large"
