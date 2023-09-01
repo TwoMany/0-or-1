@@ -104,7 +104,7 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onGameFinish(value) {
-      setWinner(value);
+      setWinner(value.winner);
     }
     socket.on("game_finished", onGameFinish);
     return () => {
@@ -114,6 +114,7 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onLose(value = []) {
+      console.log(value)
       if (value.includes(user._id)) {
         notification.error({ message: "Проиграл" });
       }
@@ -157,8 +158,6 @@ export const MainPage = () => {
   const diff = countdown ? dayjs().diff(dayjs(countdown), 'minute') : 0;
 
   const videoId = get(videos, `[${ videos.length ? diff % videos.length : 0}].link`)
-
-  console.log(videoId, diff % videos.length || 1)
 
   return (
     <Layout>
@@ -217,7 +216,7 @@ export const MainPage = () => {
               </div>
             )}
 
-            {winner && <h2>Победитель {winner.login}</h2>}
+            {winner && <h2>Победитель {winner.name}</h2>}
 
             {videoId 
             && Boolean(get(players, "length")) && player 
