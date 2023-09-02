@@ -91,10 +91,10 @@ async function startGame() {
 
         if (_.isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection("players").deleteOne({ _id: players[i]._id });
-          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null } });
+          await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null, bot: players[i + 1].bot } });
         } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
           await db.collection("players").deleteOne({ _id: players[i + 1]._id });
-          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null } });
+          await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null, bot: players[i].bot } });
         }
       }
       let eventPlayers = await db.collection("players").find({}).toArray();
