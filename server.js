@@ -21,7 +21,7 @@ const runningJobs = [];
 const defaultHour = 22;
 const defaultMinutes = 0;
 const roundInterval = 60000;
-var gameRunning = false;
+var gameRunning = false, finalPair = false;
 
 async function stopAllJobs() {
   for (const job of runningJobs) {
@@ -58,9 +58,18 @@ async function game() {
 game();
 
 async function startGame() {
-  const gameInterval = setInterval(async () => {
+ const gameInterval = setInterval(async () => {
     const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
+
+    if (players.length == 1 && finalPair) {
+      clearInterval(gameInterval);
+      await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
+      await db.collection("players").deleteMany({});
+      io.emit("players", []);
+      io.emit("game_finished", { winner: { ...players[0] } });
+      return;
+    }
 
     if (_.get(players, "length") >= 2) {
       const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
@@ -98,17 +107,9 @@ async function startGame() {
         }
       }
       let eventPlayers = await db.collection("players").find({}).toArray();
+      finalPair = eventPlayers.length == 1 ? true : false;
       io.emit("players", eventPlayers);
 
-      if (players.length == 1) {
-        clearInterval(gameInterval);
-        await db.collection("winners").insertOne(_.omit(...players, ["_id", "answer", "bot"]));
-        await db.collection("players").deleteMany({});
-        io.emit("players", []);
-        io.emit("game_finished", { winner: { ...players[0] } });
-        gameRunning = false;
-        return;
-      }
     } else {
       io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
     }
