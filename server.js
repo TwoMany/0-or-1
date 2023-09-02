@@ -58,7 +58,7 @@ async function game() {
 game();
 
 async function startGame() {
- const gameInterval = setInterval(async () => {
+  const gameInterval = setInterval(async () => {
     const players = await db.collection("players").find({}).toArray();
     const playersToDelete = [];
 
@@ -102,7 +102,7 @@ async function startGame() {
 
       if (eventPlayers.length == 1) {
         clearInterval(gameInterval);
-        await db.collection("winners").insertOne(_.omit(...eventPlayers, ["_id", "answer", "bot"]));
+        await db.collection("winners").insertOne(_.omit(...eventPlayers, ["_id", "answer"]));
         await db.collection("players").deleteMany({});
         io.emit("players", []);
         io.emit("game_finished", { winner: { ...eventPlayers[0] } });
@@ -281,12 +281,26 @@ app.put("/user", async (req, res) => {
 app.post("/participate", async (req, res) => {
   const { _id, login } = req.body;
 
-  const player = await db.collection("players").insertOne({ userId: _id, name: login, answer: null, bot: null });
-  const players = await db.collection("players").find({}).toArray();
+  if (_id && login) {
+    const existingPlayer = await db.collection("players").findOne({ userId: new ObjectId(_id) });
 
-  io.emit("players", players);
+    if (!existingPlayer) {
 
-  res.status(200).send({ response: player });
+      const player = await db.collection("players").insertOne({ userId: _id, name: login, answer: null, bot: null });
+      const players = await db.collection("players").find({}).toArray();
+
+      io.emit("players", players);
+
+      res.status(200).send({ response: player });
+
+    } else {
+      res.status(200).send({ response: 'Already registered for the game' });
+    }
+
+  } else {
+    res.status(200).send({ response: 'Go away, null' });
+  }
+
 });
 server.listen(9000);
 
