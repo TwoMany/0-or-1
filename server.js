@@ -58,11 +58,12 @@ async function game() {
 game();
 
 async function startGame() {
-  const gameInterval = setInterval(async () => {
-    const players = await db.collection("players").find({}).toArray();
-    const playersToDelete = [];
+  const members = await db.collection("players").find({}).toArray();
 
-    if (_.get(players, "length") >= 2) {
+  if (_.get(members, "length") >= 2) {
+    const gameInterval = setInterval(async () => {
+      const players = await db.collection("players").find({}).toArray();
+      const playersToDelete = [];
       const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
       const arr = players.slice(0, targetLength);
 
@@ -71,7 +72,7 @@ async function startGame() {
       await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
       io.emit(
         "losers",
-        playersToDelete.map((el) => el._id)
+        playersToDelete.map((el) => el.userId)
       );
       io.emit("players", arr);
 
@@ -90,9 +91,11 @@ async function startGame() {
         }
 
         if (_.isEqual(players[i].answer, players[i + 1].answer)) {
+          io.emit("losers",  [players[i].userId]);
           await db.collection("players").deleteOne({ _id: players[i]._id });
           await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null, bot: players[i + 1].bot } });
         } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
+          io.emit("losers",  [players[i + 1].userId]);
           await db.collection("players").deleteOne({ _id: players[i + 1]._id });
           await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null, bot: players[i].bot } });
         }
@@ -109,11 +112,13 @@ async function startGame() {
         gameRunning = false;
         return;
       }
+    }, roundInterval);
 
-    } else {
-      io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
-    }
-  }, roundInterval);
+  } else {
+    await db.collection("players").deleteMany({});
+    gameRunning = false;
+    io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
+  }
 }
 /// post anwser
 
@@ -127,14 +132,14 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV !== "production") {
-    res.header("Access-Control-Allow-Origin", "*"); 
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); 
-    next();
-  }
-});
+// app.use((req, res, next) => {
+//   if (process.env.NODE_ENV !== "production") {
+//     res.header("Access-Control-Allow-Origin", "*"); 
+//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); 
+//     next();
+//   }
+// });
 
 app.post("/answer", async (req, res) => {
   const { userId, answer } = req.body;
