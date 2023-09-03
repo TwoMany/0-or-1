@@ -58,11 +58,12 @@ async function game() {
 game();
 
 async function startGame() {
-  const gameInterval = setInterval(async () => {
-    const players = await db.collection("players").find({}).toArray();
-    const playersToDelete = [];
+  const members = await db.collection("players").find({}).toArray();
 
-    if (_.get(players, "length") >= 2) {
+  if (_.get(members, "length") >= 2) {
+    const gameInterval = setInterval(async () => {
+      const players = await db.collection("players").find({}).toArray();
+      const playersToDelete = [];
       const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
       const arr = players.slice(0, targetLength);
 
@@ -109,14 +110,13 @@ async function startGame() {
         gameRunning = false;
         return;
       }
+    }, roundInterval);
 
-    } else {
-      await db.collection("players").deleteMany({});
-      clearInterval(gameInterval);
-      gameRunning = false;
-      io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
-    }
-  }, roundInterval);
+  } else {
+    await db.collection("players").deleteMany({});
+    gameRunning = false;
+    io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
+  }
 }
 /// post anwser
 
