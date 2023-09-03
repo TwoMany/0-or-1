@@ -111,6 +111,9 @@ async function startGame() {
       }
 
     } else {
+      await db.collection("players").deleteMany({});
+      clearInterval(gameInterval);
+      gameRunning = false;
       io.emit("start_game_failed", "Игра не началась, недостаточное колличество игроков!");
     }
   }, roundInterval);
