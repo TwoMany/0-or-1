@@ -71,7 +71,7 @@ async function startGame() {
       await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
       io.emit(
         "losers",
-        playersToDelete.map((el) => el._id)
+        playersToDelete.map((el) => el.userId)
       );
       io.emit("players", arr);
 
