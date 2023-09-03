@@ -115,7 +115,8 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onLose(value = []) {
-      console.log(value);
+      console.log(value, user);
+
       if (value.includes(user._id)) {
         notification.error({ message: "Проиграл" });
       }
@@ -142,6 +143,8 @@ export const MainPage = () => {
 
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
+
+  console.log(players);
 
   const opts = {
     height: "390",
@@ -182,14 +185,6 @@ export const MainPage = () => {
               }}
               icon={<LogoutOutlined />}
             />
-            <Button
-              onClick={() => {
-                youtubePlayer.setVolume(100);
-                youtubePlayer.playVideo();
-              }}
-            >
-              AAA
-            </Button>
           </Space>
         )}
       </Header>
@@ -232,7 +227,11 @@ export const MainPage = () => {
               </div>
             )}
 
-            {winner && <h2>Победитель {winner.name}</h2>}
+            {winner && (
+              <h2>
+                Победитель {winner.name} {winner.bot ? "(BOT)" : ""}
+              </h2>
+            )}
 
             {videoId && Boolean(get(players, "length")) && player && (
               <YouTube
@@ -272,22 +271,23 @@ export const MainPage = () => {
                     )}
                   </>
                 ) : (
-                  <Button
-                    disabled={
-                      player ||
-                      dayjs(countdown).diff(dayjs(), "minute") > 5 ||
-                      dayjs(countdown).diff(dayjs(), "minute") < 0
-                    }
-                    onClick={() => {
-                      // youtubePlayer.setVolume(100);
-                      //   youtubePlayer.playVideo();
-                      postData("/participate", user).then((data) => {});
-                    }}
-                    size="large"
-                    type="primary"
-                  >
-                    Принять участие
-                  </Button>
+                  <>
+                    {dayjs(countdown).diff(dayjs(), "minute", true) <= 5 && dayjs(countdown).diff(dayjs(), "minute", true) >= 0 &&
+                     (
+                      <Button
+                        disabled={player}
+                        onClick={() => {
+                          // youtubePlayer.setVolume(100);
+                          //   youtubePlayer.playVideo();
+                          postData("/participate", user).then((data) => {});
+                        }}
+                        size="large"
+                        type="primary"
+                      >
+                        Принять участие
+                      </Button>
+                    )}
+                  </>
                 )}
               </Space>
             ) : (
