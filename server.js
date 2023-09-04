@@ -31,7 +31,7 @@ async function stopAllJobs() {
 }
 
 
-async function setup() {
+async function setup(kicked) {
   const players = await db.collection("players").find({}).toArray();
   const playersToDelete = [];
   const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
@@ -40,10 +40,13 @@ async function setup() {
   playersToDelete.push(...players.slice(targetLength, players.length));
 
   await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-  io.emit(
-    "losers",
-    playersToDelete.map((el) => el.userId)
-  );
+
+  if (kicked) {
+    io.emit("kicked", playersToDelete.map((el) => el.userId));
+  } else {
+    io.emit("losers", playersToDelete.map((el) => el.userId));
+  }
+
   io.emit("players", allowedPlayers);
 
   return allowedPlayers;
@@ -77,11 +80,10 @@ async function game() {
 game();
 
 async function startGame() {
-  const members = await setup();
-
+  const members = await setup(true);
   if (_.get(members, "length") >= 2) {
     const gameInterval = setInterval(async () => {
-      const players = await setup();
+      const players = await setup(false);
       for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
         players[i + 1].bot = false;
@@ -97,11 +99,11 @@ async function startGame() {
         }
 
         if (_.isEqual(players[i].answer, players[i + 1].answer)) {
-          io.emit("losers",  [players[i].userId]);
+          io.emit("losers", [players[i].userId]);
           await db.collection("players").deleteOne({ _id: players[i]._id });
           await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null, bot: players[i + 1].bot } });
         } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          io.emit("losers",  [players[i + 1].userId]);
+          io.emit("losers", [players[i + 1].userId]);
           await db.collection("players").deleteOne({ _id: players[i + 1]._id });
           await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null, bot: players[i].bot } });
         }
