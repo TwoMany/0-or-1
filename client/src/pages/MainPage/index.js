@@ -127,6 +127,20 @@ export const MainPage = () => {
     };
   }, [user]);
 
+  useEffect(() => {
+    function onKick(value = []) {
+      console.log(value, user);
+
+      if (value.includes(user._id)) {
+        notification.error({ message: "Пара не найдена!" });
+      }
+    }
+    socket.on("kicked", onKick);
+    return () => {
+      socket.off("kicked", onKick);
+    };
+  }, [user]);
+
   const handleSendAnswer = useCallback(
     (answer) => {
       youtubePlayer.setVolume(100);
