@@ -30,6 +30,25 @@ async function stopAllJobs() {
   runningJobs.length = 0;
 }
 
+
+async function setup() {
+  const players = await db.collection("players").find({}).toArray();
+  const playersToDelete = [];
+  const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
+  const allowedPlayers = players.slice(0, targetLength);
+
+  playersToDelete.push(...players.slice(targetLength, players.length));
+
+  await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
+  io.emit(
+    "losers",
+    playersToDelete.map((el) => el.userId)
+  );
+  io.emit("players", allowedPlayers);
+
+  return allowedPlayers;
+}
+
 async function game() {
   try {
     const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
@@ -58,24 +77,11 @@ async function game() {
 game();
 
 async function startGame() {
-  const members = await db.collection("players").find({}).toArray();
+  const members = await setup();
 
   if (_.get(members, "length") >= 2) {
     const gameInterval = setInterval(async () => {
-      const players = await db.collection("players").find({}).toArray();
-      const playersToDelete = [];
-      const targetLength = Math.pow(2, Math.floor(Math.log2(players.length)));
-      const arr = players.slice(0, targetLength);
-
-      playersToDelete.push(...players.slice(targetLength, players.length));
-
-      await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
-      io.emit(
-        "losers",
-        playersToDelete.map((el) => el.userId)
-      );
-      io.emit("players", arr);
-
+      const players = await setup();
       for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
         players[i + 1].bot = false;
