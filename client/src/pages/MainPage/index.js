@@ -158,16 +158,20 @@ export const MainPage = () => {
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
-  console.log(players);
-
   const opts = {
     height: "390",
     width: "640",
     playerVars: {
+      controls: 0,
       // https://developers.google.com/youtube/player_parameters
       autoplay: 1,
       loop: 1,
     },
+  };
+
+  const playerStyles = {
+    border: "1px solid lightgray",
+    padding: 48,
   };
 
   const onReady = (event) => {
@@ -175,6 +179,10 @@ export const MainPage = () => {
     event.target.pauseVideo();
     setYoutubePlayer(event.target);
   };
+
+  const answer1 = playerIndex % 2 === 0 ? get(player, 'answer') : get(oponent, 'answer');
+
+  const answer2 = playerIndex % 2 !== 0 ? get(player, 'answer') : get(oponent, 'answer');
 
   const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
 
@@ -247,7 +255,10 @@ export const MainPage = () => {
               </h2>
             )}
 
-            {videoId && Boolean(get(players, "length")) && player && (
+            {videoId 
+            && Boolean(get(players, "length")) && player 
+            && (
+              <div style={{pointerEvents: 'none'}}>
               <YouTube
                 videoId={videoId}
                 opts={opts}
@@ -257,6 +268,7 @@ export const MainPage = () => {
                   setYoutubePlayer(event.target);
                 }}
               />
+              </div>
             )}
 
             {user ? (
@@ -266,41 +278,97 @@ export const MainPage = () => {
                 </div>
                 {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
                   <>
-                    <div style={{ display: "flex", justifyContent: "space-between", minWidth: 280, gap: 24 }}>
-                      <div>
-                        {player.name} ({oponent.answer !== null && player.answer !== null ? player.answer : "?"}){" "}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        minWidth: 280,
+                        gap: 96,
+                      }}
+                    >
+                      <Space direction="vertical" align="center" style={playerStyles}>
+                        <UserOutlined style={{ fontSize: 48 }} />
+                        <div style={{fontWeight: 700}}>{player.name}</div>
                         {playerIndex % 2 === 0 ? "загадывает" : "разгадывает"}
-                      </div>
-                      <div>
-                        {oponent.name} {oponent.bot ? "(BOT)" : ""} (
-                        {oponent.answer !== null && player.answer !== null ? oponent.answer : "?"}){" "}
+                        {!get(players, `[${playerIndex}].answer`) && (
+                          <Space direction="vertical" align="center" style={{ marginBottom: -14 }}>
+                            <div style={{ marginTop: 14 }}>Сделайте выбор</div>
+                            <Space.Compact block>
+                              <Button size="large" onClick={() => handleSendAnswer(0)}>
+                                0
+                              </Button>
+                              <Button size="large" onClick={() => handleSendAnswer(1)}>
+                                1
+                              </Button>
+                            </Space.Compact>
+                          </Space>
+                        )}
+                      </Space>
+
+                      <Space direction="vertical" align="center">
+                        Загадал
+                        <div
+                          style={{
+                            padding: 18,
+                            border: "1px solid lightgray",
+                            width: 128,
+                            textAlign: "center",
+                            background:
+                              player.answer === null || oponent.answer === null
+                                ? "none"
+                                : answer1 === answer2
+                                ? "#f39292"
+                                : "#74e978",
+                          }}
+                        >
+                          {player.answer === null || oponent.answer === null ? "-" : answer1}
+                        </div>
+                        <div style={{fontWeight: 700}}>VS</div>
+                        Отгадал
+                        <div
+                          style={{
+                            padding: 18,
+                            border: "1px solid lightgray",
+                            width: 128,
+                            textAlign: "center",
+                            background:
+                              player.answer === null || oponent.answer === null
+                                ? "none"
+                                : answer1 !== answer2
+                                ? "#f39292"
+                                : "#74e978",
+                          }}
+                        >
+                          {player.answer === null || oponent.answer === null ? "-" : answer2}
+                        </div>
+                      </Space>
+                      <Space direction="vertical" align="center" style={playerStyles}>
+                        <UserOutlined style={{ fontSize: 48 }} />
+                        <div style={{fontWeight: 700}}>
+                          {oponent.name} {oponent.bot ? "(BOT)" : ""}{" "}
+                        </div>
                         {oponentIndex % 2 === 0 ? "загадывает" : "разгадывает"}
-                      </div>
+                      </Space>
                     </div>
-                    {!get(players, `[${playerIndex}].answer`) && (
-                      <Space.Compact block>
-                        <Button onClick={() => handleSendAnswer(0)}>0</Button>
-                        <Button onClick={() => handleSendAnswer(1)}>1</Button>
-                      </Space.Compact>
-                    )}
                   </>
                 ) : (
                   <>
-                    {dayjs(countdown).diff(dayjs(), "minute", true) <= 5 && dayjs(countdown).diff(dayjs(), "minute", true) >= 0 &&
-                     (
-                      <Button
-                        disabled={player}
-                        onClick={() => {
-                          // youtubePlayer.setVolume(100);
-                          //   youtubePlayer.playVideo();
-                          postData("/participate", user).then((data) => {});
-                        }}
-                        size="large"
-                        type="primary"
-                      >
-                        Принять участие
-                      </Button>
-                    )}
+                    {dayjs(countdown).diff(dayjs(), "minute", true) <= 5 &&
+                      dayjs(countdown).diff(dayjs(), "minute", true) >= 0 && (
+                        <Button
+                          disabled={player}
+                          onClick={() => {
+                            // youtubePlayer.setVolume(100);
+                            //   youtubePlayer.playVideo();
+                            postData("/participate", user).then((data) => {});
+                          }}
+                          size="large"
+                          type="primary"
+                        >
+                          Принять участие
+                        </Button>
+                      )}
                   </>
                 )}
               </Space>
