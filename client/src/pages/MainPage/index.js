@@ -261,7 +261,7 @@ export const MainPage = () => {
 
             {videoId 
             && Boolean(get(players, "length")) && player 
-            && (
+            ? (
               <div className="auto-resizable-iframe" style={{pointerEvents: 'none',  width: '100%'}}>
               <YouTube
                 videoId={videoId}
@@ -273,7 +273,7 @@ export const MainPage = () => {
                 }}
               />
               </div>
-            )}
+            ) : <div></div>}
 
             {user ? (
               <Space direction="vertical" align="center">
