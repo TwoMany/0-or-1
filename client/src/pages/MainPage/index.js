@@ -10,7 +10,7 @@ import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import YouTube from "react-youtube";
-import './index.css';
+import "./index.css";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
@@ -181,11 +181,11 @@ export const MainPage = () => {
     setYoutubePlayer(event.target);
   };
 
-  const isMobile = window.innerWidth < 868
+  const isMobile = window.innerWidth < 868;
 
-  const answer1 = playerIndex % 2 === 0 ? get(player, 'answer') : get(oponent, 'answer');
+  const answer1 = playerIndex % 2 === 0 ? get(player, "answer") : get(oponent, "answer");
 
-  const answer2 = playerIndex % 2 !== 0 ? get(player, 'answer') : get(oponent, 'answer');
+  const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
 
   const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
 
@@ -193,23 +193,27 @@ export const MainPage = () => {
 
   return (
     <Layout>
-      <Header style={{ display: "flex", alignItems: "center", justifyContent: 'flex-end' }}>
+      <Header style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {localStorage.getItem("user") && (
-          <Space align='end'>
+          <Space align="end">
             <Button
               onClick={() => {
                 navigate("/profile");
               }}
-              icon={<UserOutlined style={{fontSize: 16}}/>}
-            >Личный кабинет</Button>
+              icon={<UserOutlined style={{ fontSize: 16 }} />}
+            >
+              Личный кабинет
+            </Button>
             <Button
               disabled={!localStorage.getItem("user")}
               onClick={() => {
                 localStorage.removeItem("user");
                 window.location.reload();
               }}
-              icon={<LogoutOutlined style={{fontSize: 16}} />}
-              >Выйти</Button>
+              icon={<LogoutOutlined style={{ fontSize: 16 }} />}
+            >
+              Выйти
+            </Button>
           </Space>
         )}
       </Header>
@@ -232,7 +236,7 @@ export const MainPage = () => {
                 <div style={{ fontSize: 28 }}>
                   Игра начнётся в {hours}:{minutes}
                 </div>
-                осталось {" "}
+                осталось{" "}
                 {countdown && (
                   <Countdown
                     overtime={Boolean(get(players, "length"))}
@@ -253,27 +257,27 @@ export const MainPage = () => {
               </div>
             )}
 
+            {videoId && Boolean(get(players, "length")) && player ? (
+              <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
+                <YouTube
+                  videoId={videoId}
+                  opts={opts}
+                  onReady={onReady}
+                  onStateChange={(event) => {
+                    console.log(event);
+                    setYoutubePlayer(event.target);
+                  }}
+                />
+              </div>
+            ) : (
+              <div></div>
+            )}
+
             {winner && (
               <h2>
                 Победитель {winner.name} {winner.bot ? "(BOT)" : ""}
               </h2>
             )}
-
-            {videoId 
-            && Boolean(get(players, "length")) && player 
-            ? (
-              <div className="auto-resizable-iframe" style={{pointerEvents: 'none',  width: '100%'}}>
-              <YouTube
-                videoId={videoId}
-                opts={opts}
-                onReady={onReady}
-                onStateChange={(event) => {
-                  console.log(event);
-                  setYoutubePlayer(event.target);
-                }}
-              />
-              </div>
-            ) : <div></div>}
 
             {user ? (
               <Space direction="vertical" align="center">
@@ -294,7 +298,7 @@ export const MainPage = () => {
                     >
                       <Space direction="vertical" align="center" style={playerStyles}>
                         <UserOutlined style={{ fontSize: 48 }} />
-                        <div style={{fontWeight: 700}}>{player.name}</div>
+                        <div style={{ fontWeight: 700 }}>{player.name}</div>
                         {playerIndex % 2 === 0 ? "загадывает" : "разгадывает"}
                         {!get(players, `[${playerIndex}].answer`) && (
                           <Space direction="vertical" align="center" style={{ marginBottom: -14 }}>
@@ -329,7 +333,7 @@ export const MainPage = () => {
                         >
                           {player.answer === null || oponent.answer === null ? "-" : answer1}
                         </div>
-                        <div style={{fontWeight: 700}}>VS</div>
+                        <div style={{ fontWeight: 700 }}>VS</div>
                         Отгадал
                         <div
                           style={{
@@ -350,7 +354,7 @@ export const MainPage = () => {
                       </Space>
                       <Space direction="vertical" align="center" style={playerStyles}>
                         <UserOutlined style={{ fontSize: 48 }} />
-                        <div style={{fontWeight: 700}}>
+                        <div style={{ fontWeight: 700 }}>
                           {oponent.name} {oponent.bot ? "(BOT)" : ""}{" "}
                         </div>
                         {oponentIndex % 2 === 0 ? "загадывает" : "разгадывает"}
@@ -367,7 +371,7 @@ export const MainPage = () => {
                             // youtubePlayer.setVolume(100);
                             //   youtubePlayer.playVideo();
                             postData("/participate", user).then((data) => {
-                              notification.success({message: "Вы в игре!"})
+                              notification.success({ message: "Вы в игре!" });
                             });
                           }}
                           size="large"
