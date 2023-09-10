@@ -189,7 +189,7 @@ export const MainPage = () => {
 
   const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
 
-  const videoId = get(videos, `[${videos.length ? 0 % videos.length : 0}].link`);
+  const videoId = get(videos, `[${videos.length ? diff % videos.length : 0}].link`);
 
   return (
     <Layout>
@@ -260,7 +260,7 @@ export const MainPage = () => {
             )}
 
             {videoId 
-            // && Boolean(get(players, "length")) && player 
+            && Boolean(get(players, "length")) && player 
             && (
               <div className="auto-resizable-iframe" style={{pointerEvents: 'none',  width: '100%'}}>
               <YouTube
