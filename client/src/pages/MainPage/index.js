@@ -239,7 +239,7 @@ export const MainPage = () => {
                 осталось{" "}
                 {countdown && (
                   <Countdown
-                    overtime={Boolean(get(players, "length"))}
+                    overtime={Boolean(get(players, "length")) && dayjs(countdown).diff(dayjs()) <= 0}
                     date={
                       dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
                         ? dayjs().startOf("minute").valueOf() + 15000
