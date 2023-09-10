@@ -240,26 +240,27 @@ app.post("/signup", async (req, res) => {
     ]
   });
 
-  if(existingUser) {
+  if (existingUser) {
     res.status(400).send({ response: `User already exist` });
-  }
-
-  await users.insertOne({
-    login,
-    phone,
-    password,
-    isAdmin: false,
-    credit: credit || '',
-    crypto: crypto || ''
-  });
-
-  const insertedClient = await users.findOne({ login, phone, password });
-
-  if (insertedClient) {
-    res.status(200).send({ response: `User ${insertedClient.login} was created` });
   } else {
-    res.status(400).send({ response: `User does not created` });
+    await users.insertOne({
+      login,
+      phone,
+      password,
+      isAdmin: false,
+      credit: credit || '',
+      crypto: crypto || ''
+    });
+
+    const insertedClient = await users.findOne({ login, phone, password });
+
+    if (insertedClient) {
+      res.status(200).send({ response: `User ${insertedClient.login} was created` });
+    } else {
+      res.status(400).send({ response: `User does not created` });
+    }
   }
+
 });
 
 app.post("/signin", async (req, res) => {
