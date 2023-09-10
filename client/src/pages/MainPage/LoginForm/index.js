@@ -22,12 +22,17 @@ export const LoginForm = ({ setUser }) => {
             window.location.reload();
           });
         } else {
+          
           postData("/signup", values).then((data) => {
-            notification.success({ message: "Successfully" });
+            notification.success({ message: "Готово" });
             // setIsLogin(true)
             setUser(data.response);
             window.location.reload();
+          }).catch((error) => {
+            notification.error({ message: "Пользователь с таким телефоном/логином существует" });
+            console.error(error);
           });
+         
         }
       }}
     >

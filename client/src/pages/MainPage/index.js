@@ -159,8 +159,8 @@ export const MainPage = () => {
   const oponent = get(players, oponentIndex);
 
   const opts = {
-    height: "390",
-    width: "640",
+    // height: "390",
+    // width: "640",
     playerVars: {
       controls: 0,
       // https://developers.google.com/youtube/player_parameters
@@ -180,6 +180,8 @@ export const MainPage = () => {
     setYoutubePlayer(event.target);
   };
 
+  const isMobile = window.innerWidth < 868
+
   const answer1 = playerIndex % 2 === 0 ? get(player, 'answer') : get(oponent, 'answer');
 
   const answer2 = playerIndex % 2 !== 0 ? get(player, 'answer') : get(oponent, 'answer');
@@ -190,23 +192,23 @@ export const MainPage = () => {
 
   return (
     <Layout>
-      <Header style={{ display: "flex", alignItems: "center" }}>
+      <Header style={{ display: "flex", alignItems: "center", justifyContent: 'flex-end' }}>
         {localStorage.getItem("user") && (
-          <Space>
+          <Space align='end'>
             <Button
               onClick={() => {
                 navigate("/profile");
               }}
-              icon={<UserOutlined />}
-            />
+              icon={<UserOutlined style={{fontSize: 16}}/>}
+            >Личный кабинет</Button>
             <Button
               disabled={!localStorage.getItem("user")}
               onClick={() => {
                 localStorage.removeItem("user");
                 window.location.reload();
               }}
-              icon={<LogoutOutlined />}
-            />
+              icon={<LogoutOutlined style={{fontSize: 16}} />}
+              >Выйти</Button>
           </Space>
         )}
       </Header>
@@ -227,14 +229,15 @@ export const MainPage = () => {
             {user && (
               <div style={{ fontSize: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 28 }}>
-                  Начало о {hours}:{minutes}
+                  Игра начнётся в {hours}:{minutes}
                 </div>
+                осталось {" "}
                 {countdown && (
                   <Countdown
                     overtime={Boolean(get(players, "length"))}
                     date={
                       dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
-                        ? dayjs().startOf("minute").valueOf() + 60000
+                        ? dayjs().startOf("minute").valueOf() + 15000
                         : countdown
                     }
                     onComplete={() => {
@@ -284,7 +287,8 @@ export const MainPage = () => {
                         justifyContent: "space-between",
                         alignItems: "center",
                         minWidth: 280,
-                        gap: 96,
+                        gap: isMobile ? 24 : 96,
+                        flexDirection: isMobile ? "column" : "row",
                       }}
                     >
                       <Space direction="vertical" align="center" style={playerStyles}>
@@ -315,7 +319,7 @@ export const MainPage = () => {
                             width: 128,
                             textAlign: "center",
                             background:
-                              player.answer === null || oponent.answer === null
+                              player.answer === null || oponent.answer === null || playerIndex % 2 !== 0
                                 ? "none"
                                 : answer1 === answer2
                                 ? "#f39292"
@@ -333,7 +337,7 @@ export const MainPage = () => {
                             width: 128,
                             textAlign: "center",
                             background:
-                              player.answer === null || oponent.answer === null
+                              player.answer === null || oponent.answer === null || playerIndex % 2 === 0
                                 ? "none"
                                 : answer1 !== answer2
                                 ? "#f39292"
@@ -361,7 +365,9 @@ export const MainPage = () => {
                           onClick={() => {
                             // youtubePlayer.setVolume(100);
                             //   youtubePlayer.playVideo();
-                            postData("/participate", user).then((data) => {});
+                            postData("/participate", user).then((data) => {
+                              notification.success({message: "Вы в игре!"})
+                            });
                           }}
                           size="large"
                           type="primary"

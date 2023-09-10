@@ -30,10 +30,10 @@ export const ProfilePage = () => {
           });
         }}
       >
-        <Form.Item label="Карта" name="card">
+        <Form.Item label="Номер банковской карты" name="card">
           <Input />
         </Form.Item>
-        <Form.Item label="Крипто" name="crypto">
+        <Form.Item label="Криптокошелек USDT (TRC-20)" name="crypto">
           <Input />
         </Form.Item>
 
@@ -124,22 +124,22 @@ export const ProfilePage = () => {
 
   return (
     <Layout>
-      <Header style={{ display: "flex", alignItems: "center" }}>
+      <Header style={{ display: "flex", alignItems: "center", justifyContent: 'flex-end' }}>
         <Space>
           <Button
             onClick={() => {
               navigate("/");
             }}
-            icon={<HomeOutlined />}
-          />
+            icon={<HomeOutlined style={{fontSize: 16}} />}
+            >Вернутся в игру</Button>
           <Button
             disabled={!localStorage.getItem("user")}
             onClick={() => {
               localStorage.removeItem("user");
               window.location.reload();
             }}
-            icon={<LogoutOutlined />}
-          />
+            icon={<LogoutOutlined style={{fontSize: 16}} />}
+          >Выйти</Button>
         </Space>
       </Header>
       <Content style={{ padding: "12px 24px", minHeight: 280 }}>
