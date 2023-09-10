@@ -54,14 +54,14 @@ async function setup(kicked) {
 
 async function game() {
   try {
-    const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
+    const { gameStartHour, gameStartMinutes, roundInterval } = await db.collection("timer_settings").findOne({});
 
     const job = new CronJob(
       `* ${gameStartMinutes || defaultMinutes} ${gameStartHour || defaultHour} * * *`,
       () => {
         if (!gameRunning) {
           gameRunning = true;
-          startGame();
+          startGame(roundInterval);
         }
       },
       null,
@@ -79,7 +79,7 @@ async function game() {
 
 game();
 
-async function startGame() {
+async function startGame(roundInterval) {
   const members = await setup(true);
   if (_.get(members, "length") >= 2) {
     const gameInterval = setInterval(async () => {
@@ -228,6 +228,21 @@ app.post("/time", async (req, res) => {
 
 app.post("/signup", async (req, res) => {
   const { login, phone, password, credit, crypto } = req.body;
+
+  const existingUser = await users.findOne({
+    $or: [
+      {
+        login: login
+      },
+      {
+        phone: phone
+      }
+    ]
+  });
+
+  if(existingUser) {
+    res.status(400).send({ response: `User already exist` });
+  }
 
   await users.insertOne({
     login,
