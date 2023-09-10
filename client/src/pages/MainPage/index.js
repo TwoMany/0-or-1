@@ -10,6 +10,7 @@ import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import YouTube from "react-youtube";
+import './index.css';
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
@@ -188,7 +189,7 @@ export const MainPage = () => {
 
   const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
 
-  const videoId = get(videos, `[${videos.length ? diff % videos.length : 0}].link`);
+  const videoId = get(videos, `[${videos.length ? 0 % videos.length : 0}].link`);
 
   return (
     <Layout>
@@ -225,7 +226,7 @@ export const MainPage = () => {
             <Spin />
           </div>
         ) : (
-          <Space direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
+          <Space className="mainSpace" direction="vertical" align="center" style={{ width: "100%", fontSize: 18 }}>
             {user && (
               <div style={{ fontSize: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 28 }}>
@@ -259,9 +260,9 @@ export const MainPage = () => {
             )}
 
             {videoId 
-            && Boolean(get(players, "length")) && player 
+            // && Boolean(get(players, "length")) && player 
             && (
-              <div style={{pointerEvents: 'none'}}>
+              <div className="auto-resizable-iframe" style={{pointerEvents: 'none',  width: '100%'}}>
               <YouTube
                 videoId={videoId}
                 opts={opts}
