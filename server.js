@@ -204,12 +204,12 @@ app.delete("/videos", async (req, res) => {
 });
 
 app.get("/time", async (req, res) => {
-  const { gameStartHour, gameStartMinutes } = await db.collection("timer_settings").findOne({});
-  res.status(200).send({ gameStartHour, gameStartMinutes });
+  const { gameStartHour, gameStartMinutes, roundInterval } = await db.collection("timer_settings").findOne({});
+  res.status(200).send({ gameStartHour, gameStartMinutes, roundInterval });
 });
 
 app.post("/time", async (req, res) => {
-  const { gameStartHour, gameStartMinutes } = req.body;
+  const { gameStartHour, gameStartMinutes, roundInterval } = req.body;
 
   const time = await db.collection("timer_settings").findOne({});
 
@@ -217,7 +217,7 @@ app.post("/time", async (req, res) => {
     .collection("timer_settings")
     .updateOne(
       { _id: _.get(time, "_id") },
-      { $set: { gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes } }
+      { $set: { gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes, roundInterval: roundInterval } }
     );
 
   await stopAllJobs();
