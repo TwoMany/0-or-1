@@ -16,14 +16,17 @@ export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
   const [winner, setWinner] = useState();
+  const [timer, setTimer] = useState();
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
+  const [roundInterval, setRoundInterval] = useState(60000);
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [youtubePlayer, setYoutubePlayer] = useState();
   const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
+  const [hideCount, setHideCount] = useState(false);
 
   const fetchPlayers = useCallback(async () => {
     if (loadingPlayers) return;
@@ -41,7 +44,7 @@ export const MainPage = () => {
     const players = await response.json();
     setPlayers(players.response);
     setLoadingPlayers(false);
-  }, [loadingPlayers]);
+  }, []);
 
   const fetchVideos = useCallback(async () => {
     const response = await fetch(
@@ -70,9 +73,12 @@ export const MainPage = () => {
       }
     );
     const time = await response.json();
+    const cnt = new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0);
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
-    setCountdown(new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0));
+    setRoundInterval(time.roundInterval);
+    setTimer(dayjs(cnt).startOf("minute").valueOf() + Number(time.roundInterval));
+    setCountdown(cnt);
     setLoadingData(false);
   }, []);
 
@@ -130,8 +136,6 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onKick(value = []) {
-      console.log(value, user);
-
       if (value.includes(user._id)) {
         notification.error({ message: "Пара не найдена!" });
       }
@@ -187,9 +191,16 @@ export const MainPage = () => {
 
   const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
 
-  const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
+  const diff = countdown && roundInterval ? Math.floor(dayjs().diff(dayjs(countdown)) / roundInterval) : 0;
 
-  const videoId = get(videos, `[${videos.length ? diff % videos.length : 0}].link`);
+  const videoId = get(
+    videos,
+    `[${
+      videos.length && diff % videos.length >= 0 && diff % videos.length < videos.length ? diff % videos.length : 0
+    }].link`
+  );
+
+  console.log(timer, videoId, diff);
 
   return (
     <Layout>
@@ -237,20 +248,29 @@ export const MainPage = () => {
                   Игра начнётся в {hours}:{minutes}
                 </div>
                 осталось{" "}
-                {countdown && (
+                {countdown && !hideCount && (
                   <Countdown
-                    overtime={Boolean(get(players, "length")) && dayjs(countdown).diff(dayjs()) <= 0}
-                    date={
-                      dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
-                        ? dayjs().startOf("minute").valueOf() + 15000
-                        : countdown
-                    }
+                    // overtime={Boolean(get(players, "length")) && dayjs(countdown).diff(dayjs()) <= 0}
+                    overtime
+                    date={dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length") ? timer : countdown}
                     onComplete={() => {
-                      if (youtubePlayer && player) {
-                        youtubePlayer.setVolume(100);
-                        youtubePlayer.playVideo();
+                      if (dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")) {
+                        setTimer(dayjs().startOf("minute").valueOf() + Number(roundInterval));
+                        fetchPlayers();
+
+                        if (youtubePlayer && player) {
+                          youtubePlayer.setVolume(100);
+                          youtubePlayer.playVideo();
+                        }
+                      } else if (get(players, "length")) {
+                        setHideCount(true);
+                        setTimeout(() => {
+                          setHideCount(false);
+                        }, 0);
                       }
-                      fetchPlayers();
+                    }}
+                    onStop={() => {
+                      console.log("stop");
                     }}
                   />
                 )}
