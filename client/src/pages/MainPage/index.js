@@ -272,6 +272,16 @@ export const MainPage = () => {
                     onStop={() => {
                       console.log("stop");
                     }}
+                    renderer={({ hours, minutes, seconds, completed }) => {
+                      // render completed
+                      if (completed) return <span>00:00:00</span>;
+                      // render current countdown time
+                      return (
+                        <span>
+                          {hours}:{minutes}:{seconds}
+                        </span>
+                      );
+                    }}
                   />
                 )}
               </div>
