@@ -11,6 +11,7 @@ import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import YouTube from "react-youtube";
 import "./index.css";
+import { AnswerModal } from "./AnswerModal";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
@@ -22,6 +23,7 @@ export const MainPage = () => {
   const [roundInterval, setRoundInterval] = useState(60000);
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [anserModalOpen, setAnserModalOpen] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [youtubePlayer, setYoutubePlayer] = useState();
   const [videos, setVideos] = useState([]);
@@ -200,7 +202,7 @@ export const MainPage = () => {
     }].link`
   );
 
-  console.log(timer, videoId, diff);
+  const formatTime = (digit) => digit < 10 ? `0${digit}` : digit;
 
   return (
     <Layout>
@@ -245,7 +247,7 @@ export const MainPage = () => {
             {user && (
               <div style={{ fontSize: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 28 }}>
-                  Игра начнётся в {hours}:{minutes}
+                  Игра начнётся в {formatTime(hours)}:{formatTime(minutes)}
                 </div>
                 осталось{" "}
                 {countdown && !hideCount && (
@@ -254,6 +256,7 @@ export const MainPage = () => {
                     overtime
                     date={dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length") ? timer : countdown}
                     onComplete={() => {
+                      if(players.length >= 2) setAnserModalOpen(false)
                       if (dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")) {
                         setTimer(dayjs().startOf("minute").valueOf() + Number(roundInterval));
                         fetchPlayers();
@@ -278,7 +281,7 @@ export const MainPage = () => {
                       // render current countdown time
                       return (
                         <span>
-                          {hours}:{minutes}:{seconds}
+                          {formatTime(minutes)}:{formatTime(seconds)}
                         </span>
                       );
                     }}
@@ -330,7 +333,7 @@ export const MainPage = () => {
                         <UserOutlined style={{ fontSize: 48 }} />
                         <div style={{ fontWeight: 700 }}>{player.name}</div>
                         {playerIndex % 2 === 0 ? "загадывает" : "разгадывает"}
-                        {!get(players, `[${playerIndex}].answer`) && (
+                        {!get(players, `[${playerIndex}].answer`) && false && (
                           <Space direction="vertical" align="center" style={{ marginBottom: -14 }}>
                             <div style={{ marginTop: 14 }}>Сделайте выбор</div>
                             <Space.Compact block>
@@ -418,6 +421,7 @@ export const MainPage = () => {
             )}
           </Space>
         )}
+        <AnswerModal open={anserModalOpen} onCancel={() => setAnserModalOpen(false)} onAnswer={handleSendAnswer}/>
       </Content>
     </Layout>
   );

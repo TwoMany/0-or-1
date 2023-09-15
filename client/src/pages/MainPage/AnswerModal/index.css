@@ -1,0 +1,22 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.ans {
+  font-size: 48px;
+  height: 210px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-shadow: 0px 0px 5px -4px;
+  border-radius: 6px;
+}
+
+.ans:hover {
+  background: antiquewhite;
+}
