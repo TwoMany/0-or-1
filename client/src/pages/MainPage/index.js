@@ -29,6 +29,7 @@ export const MainPage = () => {
   const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
   const [hideCount, setHideCount] = useState(false);
+  const [videoId, setVideoId] = useState();
 
   const fetchPlayers = useCallback(async () => {
     if (loadingPlayers) return;
@@ -115,6 +116,8 @@ export const MainPage = () => {
   useEffect(() => {
     function onGameFinish(value) {
       setWinner(value.winner);
+      setVideoId(undefined);
+      setPlayers([]);
     }
     socket.on("game_finished", onGameFinish);
     return () => {
@@ -150,8 +153,8 @@ export const MainPage = () => {
 
   const handleSendAnswer = useCallback(
     (answer) => {
-      youtubePlayer.setVolume(100);
-      youtubePlayer.playVideo();
+      // youtubePlayer.setVolume(100);
+      if (youtubePlayer) youtubePlayer.playVideo();
       postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
         console.log(data);
       });
@@ -171,8 +174,8 @@ export const MainPage = () => {
     playerVars: {
       controls: 0,
       // https://developers.google.com/youtube/player_parameters
-      autoplay: 1,
-      loop: 1,
+      // autoplay: 1,
+      // loop: 1,
     },
   };
 
@@ -183,7 +186,7 @@ export const MainPage = () => {
 
   const onReady = (event) => {
     // access to player in all event handlers via event.target
-    event.target.pauseVideo();
+    // event.target.pauseVideo();
     setYoutubePlayer(event.target);
   };
 
@@ -195,14 +198,20 @@ export const MainPage = () => {
 
   const diff = countdown && roundInterval ? Math.floor(dayjs().diff(dayjs(countdown)) / roundInterval) : 0;
 
-  const videoId = get(
+  const newVideoId = get(
     videos,
     `[${
       videos.length && diff % videos.length >= 0 && diff % videos.length < videos.length ? diff % videos.length : 0
     }].link`
   );
 
-  const formatTime = (digit) => digit < 10 ? `0${digit}` : digit;
+  if (newVideoId != videoId) {
+    setVideoId(newVideoId);
+  }
+
+  const formatTime = (digit) => (digit < 10 ? `0${digit}` : digit);
+
+  console.log(diff, videoId);
 
   return (
     <Layout>
@@ -256,15 +265,19 @@ export const MainPage = () => {
                     overtime
                     date={dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length") ? timer : countdown}
                     onComplete={() => {
-                      if(players.length >= 2) setAnserModalOpen(false)
+                      if (players.length >= 2) setAnserModalOpen(true);
                       if (dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")) {
-                        setTimer(dayjs().startOf("minute").valueOf() + Number(roundInterval));
-                        fetchPlayers();
-
-                        if (youtubePlayer && player) {
-                          youtubePlayer.setVolume(100);
-                          youtubePlayer.playVideo();
+                        setHideCount(true);
+                        setTimeout(() => {
+                          setHideCount(false);
+                        }, 0);
+                        if (players.length >= 2) {
+                          setTimer(dayjs().startOf("minute").valueOf() + Number(roundInterval));
                         }
+                        // if (youtubePlayer && player) {
+                        //   youtubePlayer.setVolume(100);
+                        //   youtubePlayer.playVideo();
+                        // }
                       } else if (get(players, "length")) {
                         setHideCount(true);
                         setTimeout(() => {
@@ -281,7 +294,7 @@ export const MainPage = () => {
                       // render current countdown time
                       return (
                         <span>
-                          {formatTime(minutes)}:{formatTime(seconds)}
+                          {formatTime(hours)}:{formatTime(minutes)}:{formatTime(seconds)}
                         </span>
                       );
                     }}
@@ -290,15 +303,17 @@ export const MainPage = () => {
               </div>
             )}
 
-            {videoId && Boolean(get(players, "length")) && player ? (
+            {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
               <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
                 <YouTube
                   videoId={videoId}
                   opts={opts}
                   onReady={onReady}
-                  onStateChange={(event) => {
-                    console.log(event);
-                    setYoutubePlayer(event.target);
+                  // onStateChange={(event) => {
+                  //   setYoutubePlayer(event.target);
+                  // }}
+                  onError={(e) => {
+                    console.log(e);
                   }}
                 />
               </div>
@@ -421,7 +436,24 @@ export const MainPage = () => {
             )}
           </Space>
         )}
-        <AnswerModal open={anserModalOpen} onCancel={() => setAnserModalOpen(false)} onAnswer={handleSendAnswer}/>
+        {anserModalOpen && <AnswerModal
+          open={anserModalOpen}
+          onCancel={() => {
+            setAnserModalOpen(false);
+            // if (youtubePlayer && player) {
+            //   // youtubePlayer.setVolume(100);
+            //   youtubePlayer.playVideo();
+            // }
+          }}
+          onAnswer={(ans) => {
+            handleSendAnswer(ans);
+            setAnserModalOpen(false);
+            // if (youtubePlayer && player) {
+            //   // youtubePlayer.setVolume(100);
+            //   youtubePlayer.playVideo();
+            // }
+          }}
+        />}
       </Content>
     </Layout>
   );
