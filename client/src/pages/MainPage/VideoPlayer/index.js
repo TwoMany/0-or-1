@@ -64,17 +64,19 @@ export const VideoPlayer = ({
     [user, videLayer, youtubePlayer]
   );
   if (countdown <= 0) {
-    if (videLayer && !get(player, 'answer')) {
+    if (gameStarted === 1) {
+      setGameStarted(2);
+    }
+    if (videLayer && !get(player, "answer")) {
       setVideoLayer(false);
-      setGameStarted(2)
       if (youtubePlayer) youtubePlayer.playVideo();
     }
-    // setGameStarted(false);
-    // setPropsTimer(dayjs().startOf("minute").valueOf() + Number(roundInterval));
   }
 
+  console.log(gameStarted, countdown);
+
   return (
-    <div style={{ position: "relative", height: !gameStarted ? 0 : 'auto', overflow: 'auto'}}>
+    <div style={{ position: "relative", height: !gameStarted ? 0 : "auto", overflow: "auto" }}>
       <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
         <YouTube
           videoId={videoId}
@@ -93,7 +95,7 @@ export const VideoPlayer = ({
           //   setYoutubePlayer(event.target);
           // }}
           onStateChange={(state) => {
-            console.log(state)
+            console.log(state);
             if (state.data === 0) {
               setVideoLayer(true);
             }

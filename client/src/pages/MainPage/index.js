@@ -106,16 +106,19 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onPlayersChange(value) {
+      console.log("onPlayersChange")
       if (!isEqual(players, value)) {
+        const playerIndex = (value || []).findIndex(({ userId }) => get(user, "_id") === userId);
         setPlayers(value);
-        if (dayjs(countdown).diff(dayjs()) <= 0) setGameStarted(1);
+        console.log(playerIndex);
+        if (dayjs(countdown).diff(dayjs()) <= 0 && playerIndex >= 0) setGameStarted(1);
       }
     }
     socket.on("players", onPlayersChange);
     return () => {
       socket.off("players", onPlayersChange);
     };
-  }, [players, countdown]);
+  }, [players, countdown, user]);
 
   useEffect(() => {
     function onGameFinish(value) {
@@ -135,6 +138,10 @@ export const MainPage = () => {
 
       if (value.includes(user._id)) {
         notification.error({ message: "Проиграл" });
+      } else {
+        if(gameStarted !== 1) {
+          setGameStarted(1);
+        }
       }
     }
     socket.on("losers", onLose);
@@ -248,7 +255,7 @@ export const MainPage = () => {
                       date={countdown}
                       onComplete={() => {
                         // if (players.length >= 2) setAnserModalOpen(true);
-
+                        !dayjs(countdown).diff(dayjs()) && window.location.reload();
                         if (get(players, "length")) {
                           if (!gameStarted) setGameStarted(1);
                           // setHideCount(true);
@@ -276,16 +283,20 @@ export const MainPage = () => {
               </div>
             )}
 
-            <VideoPlayer
-              videoId={videoId}
-              players={players}
-              user={user}
-              setGameStarted={setGameStarted}
-              gameStarted={gameStarted}
-              propsTimer={timer}
-              setPropsTimer={setTimer}
-              roundInterval={roundInterval}
-            />
+            {player && !winner ? (
+              <VideoPlayer
+                videoId={videoId}
+                players={players}
+                user={user}
+                setGameStarted={setGameStarted}
+                gameStarted={gameStarted}
+                propsTimer={timer}
+                setPropsTimer={setTimer}
+                roundInterval={roundInterval}
+              />
+            ) : (
+              <div></div>
+            )}
 
             {/* {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
               <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
