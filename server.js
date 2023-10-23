@@ -21,6 +21,10 @@ const runningJobs = [];
 const defaultHour = 22;
 const defaultMinutes = 0;
 const roundInterval = 60000;
+const phases = [
+  'START',
+  'IDLE'
+]
 var gameRunning = false;
 
 async function stopAllJobs() {
@@ -84,6 +88,11 @@ async function startGame(roundInterval) {
   if (_.get(members, "length") >= 2) {
     const gameInterval = setInterval(async () => {
       const players = await setup(false);
+
+      io.emit("GAME_SOCKET", { players, phase: phases[0] });
+      await db.collection('phases').deleteMany();
+      await db.collection('phases').insertOne({phase: phases[0]});
+
       for (let i = 0; i < players.length - 1; i += 2) {
         players[i].bot = false;
         players[i + 1].bot = false;
@@ -109,13 +118,17 @@ async function startGame(roundInterval) {
         }
       }
       let eventPlayers = await db.collection("players").find({}).toArray();
+
+      setTimeout(io.emit("GAME_SOCKET", { players: eventPlayers, phase: phases[1] }), 10000);
+      await db.collection('phases').deleteMany();
+      await db.collection('phases').insertOne({phase: phases[1]});
+
       io.emit("players", eventPlayers);
 
       if (eventPlayers.length == 1) {
         clearInterval(gameInterval);
         await db.collection("winners").insertOne(_.omit(...eventPlayers, ["_id", "answer"]));
         await db.collection("players").deleteMany({});
-        io.emit("players", []);
         io.emit("game_finished", { winner: { ...eventPlayers[0] } });
         gameRunning = false;
         return;
@@ -160,8 +173,9 @@ app.post("/answer", async (req, res) => {
 
 app.get("/players", async (req, res) => {
   const players = await db.collection("players").find({}).toArray();
+  const [phases] = await db.collection("phases").find({}).toArray();
   io.emit("players", players);
-  res.status(200).send({ response: players });
+  res.status(200).send({ response: { players, phase: phases.phase || null} });
 });
 
 app.get("/users", async (req, res) => {
