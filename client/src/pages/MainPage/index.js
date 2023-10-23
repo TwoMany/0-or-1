@@ -11,19 +11,26 @@ import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import YouTube from "react-youtube";
 import "./index.css";
+import { AnswerModal } from "./AnswerModal";
+import { VideoPlayer } from "./VideoPlayer";
 
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
   const [winner, setWinner] = useState();
+  const [timer, setTimer] = useState();
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
+  const [roundInterval, setRoundInterval] = useState(60000);
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [anserModalOpen, setAnserModalOpen] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [youtubePlayer, setYoutubePlayer] = useState();
   const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
+  const [hideCount, setHideCount] = useState(false);
+  const [gameStarted, setGameStarted] = useState(0);
+  const [videoId, setVideoId] = useState();
 
   const fetchPlayers = useCallback(async () => {
     if (loadingPlayers) return;
@@ -41,7 +48,7 @@ export const MainPage = () => {
     const players = await response.json();
     setPlayers(players.response);
     setLoadingPlayers(false);
-  }, [loadingPlayers]);
+  }, []);
 
   const fetchVideos = useCallback(async () => {
     const response = await fetch(
@@ -70,9 +77,12 @@ export const MainPage = () => {
       }
     );
     const time = await response.json();
+    const cnt = new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0);
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
-    setCountdown(new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0));
+    setRoundInterval(time.roundInterval);
+    setTimer(dayjs(cnt).startOf("minute").valueOf() + Number(time.roundInterval));
+    setCountdown(cnt);
     setLoadingData(false);
   }, []);
 
@@ -96,17 +106,25 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onPlayersChange(value) {
-      if (!isEqual(players, value)) setPlayers(value);
+      console.log("onPlayersChange")
+      if (!isEqual(players, value)) {
+        const playerIndex = (value || []).findIndex(({ userId }) => get(user, "_id") === userId);
+        setPlayers(value);
+        console.log(playerIndex);
+        if (dayjs(countdown).diff(dayjs()) <= 0 && playerIndex >= 0) setGameStarted(1);
+      }
     }
     socket.on("players", onPlayersChange);
     return () => {
       socket.off("players", onPlayersChange);
     };
-  }, [players]);
+  }, [players, countdown, user]);
 
   useEffect(() => {
     function onGameFinish(value) {
       setWinner(value.winner);
+      setVideoId(undefined);
+      setPlayers([]);
     }
     socket.on("game_finished", onGameFinish);
     return () => {
@@ -120,6 +138,10 @@ export const MainPage = () => {
 
       if (value.includes(user._id)) {
         notification.error({ message: "Проиграл" });
+      } else {
+        if(gameStarted !== 1) {
+          setGameStarted(1);
+        }
       }
     }
     socket.on("losers", onLose);
@@ -130,8 +152,6 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onKick(value = []) {
-      console.log(value, user);
-
       if (value.includes(user._id)) {
         notification.error({ message: "Пара не найдена!" });
       }
@@ -142,54 +162,43 @@ export const MainPage = () => {
     };
   }, [user]);
 
-  const handleSendAnswer = useCallback(
-    (answer) => {
-      youtubePlayer.setVolume(100);
-      youtubePlayer.playVideo();
-      postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
-        console.log(data);
-      });
-    },
-    [user, youtubePlayer]
-  );
-
-  const playerIndex = (players || []).findIndex(({ userId }) => get(user, "_id") === userId);
-  const player = get(players, playerIndex);
-
-  const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
-  const oponent = get(players, oponentIndex);
-
-  const opts = {
-    // height: "390",
-    // width: "640",
-    playerVars: {
-      controls: 0,
-      // https://developers.google.com/youtube/player_parameters
-      autoplay: 1,
-      loop: 1,
-    },
-  };
-
   const playerStyles = {
     border: "1px solid lightgray",
     padding: 48,
   };
 
-  const onReady = (event) => {
-    // access to player in all event handlers via event.target
-    event.target.pauseVideo();
-    setYoutubePlayer(event.target);
-  };
-
   const isMobile = window.innerWidth < 868;
+
+  const playerIndex = (players || []).findIndex(({ userId }) => get(user, "_id") === userId);
+  const player = get(players, playerIndex);
+
+  if (player && !gameStarted && dayjs(countdown).diff(dayjs()) <= 0) {
+    setGameStarted(2);
+  }
+
+  const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
+  const oponent = get(players, oponentIndex);
 
   const answer1 = playerIndex % 2 === 0 ? get(player, "answer") : get(oponent, "answer");
 
   const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
 
-  const diff = countdown ? dayjs().diff(dayjs(countdown), "minute") : 0;
+  const diff = countdown && roundInterval ? Math.floor(dayjs().diff(dayjs(countdown)) / roundInterval) : 0;
 
-  const videoId = get(videos, `[${videos.length ? diff % videos.length : 0}].link`);
+  const newVideoId = get(
+    videos,
+    `[${
+      videos.length && diff % videos.length >= 0 && diff % videos.length < videos.length ? diff % videos.length : 0
+    }].link`
+  );
+
+  if (newVideoId != videoId) {
+    setVideoId(newVideoId);
+  }
+
+  const formatTime = (digit) => (digit < 10 ? `0${digit}` : digit);
+
+  // console.log(diff, videoId, dayjs(countdown).diff(dayjs()));
 
   return (
     <Layout>
@@ -234,44 +243,78 @@ export const MainPage = () => {
             {user && (
               <div style={{ fontSize: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 28 }}>
-                  Игра начнётся в {hours}:{minutes}
+                  Игра начнётся в {formatTime(hours)}:{formatTime(minutes)}
                 </div>
-                осталось{" "}
-                {countdown && (
-                  <Countdown
-                    overtime={Boolean(get(players, "length")) && dayjs(countdown).diff(dayjs()) <= 0}
-                    date={
-                      dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length")
-                        ? dayjs().startOf("minute").valueOf() + 15000
-                        : countdown
-                    }
-                    onComplete={() => {
-                      if (youtubePlayer && player) {
-                        youtubePlayer.setVolume(100);
-                        youtubePlayer.playVideo();
-                      }
-                      fetchPlayers();
-                    }}
-                  />
+                {countdown && !hideCount && (!gameStarted || gameStarted === 2) && (
+                  <>
+                    осталось{" "}
+                    <Countdown
+                      // overtime={Boolean(get(players, "length")) && dayjs(countdown).diff(dayjs()) <= 0}
+                      overtime
+                      // date={dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length") ? timer : countdown}
+                      date={countdown}
+                      onComplete={() => {
+                        // if (players.length >= 2) setAnserModalOpen(true);
+                        !dayjs(countdown).diff(dayjs()) && window.location.reload();
+                        if (get(players, "length")) {
+                          if (!gameStarted) setGameStarted(1);
+                          // setHideCount(true);
+                          // setTimeout(() => {
+                          //   setHideCount(false);
+                          // }, 0);
+                        }
+                      }}
+                      onStop={() => {
+                        console.log("stop");
+                      }}
+                      renderer={({ hours, minutes, seconds, completed }) => {
+                        // render completed
+                        if (completed) return <span>00:00:00</span>;
+                        // render current countdown time
+                        return (
+                          <span>
+                            {formatTime(hours)}:{formatTime(minutes)}:{formatTime(seconds)}
+                          </span>
+                        );
+                      }}
+                    />
+                  </>
                 )}
               </div>
             )}
 
-            {videoId && Boolean(get(players, "length")) && player ? (
+            {player && !winner ? (
+              <VideoPlayer
+                videoId={videoId}
+                players={players}
+                user={user}
+                setGameStarted={setGameStarted}
+                gameStarted={gameStarted}
+                propsTimer={timer}
+                setPropsTimer={setTimer}
+                roundInterval={roundInterval}
+              />
+            ) : (
+              <div></div>
+            )}
+
+            {/* {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
               <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
                 <YouTube
                   videoId={videoId}
                   opts={opts}
                   onReady={onReady}
-                  onStateChange={(event) => {
-                    console.log(event);
-                    setYoutubePlayer(event.target);
+                  // onStateChange={(event) => {
+                  //   setYoutubePlayer(event.target);
+                  // }}
+                  onError={(e) => {
+                    console.log(e);
                   }}
                 />
               </div>
             ) : (
               <div></div>
-            )}
+            )} */}
 
             {winner && (
               <h2>
@@ -285,82 +328,7 @@ export const MainPage = () => {
                   {user.login} | {get(players, "length")} участников
                 </div>
                 {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        minWidth: 280,
-                        gap: isMobile ? 24 : 96,
-                        flexDirection: isMobile ? "column" : "row",
-                      }}
-                    >
-                      <Space direction="vertical" align="center" style={playerStyles}>
-                        <UserOutlined style={{ fontSize: 48 }} />
-                        <div style={{ fontWeight: 700 }}>{player.name}</div>
-                        {playerIndex % 2 === 0 ? "загадывает" : "разгадывает"}
-                        {!get(players, `[${playerIndex}].answer`) && (
-                          <Space direction="vertical" align="center" style={{ marginBottom: -14 }}>
-                            <div style={{ marginTop: 14 }}>Сделайте выбор</div>
-                            <Space.Compact block>
-                              <Button size="large" onClick={() => handleSendAnswer(0)}>
-                                0
-                              </Button>
-                              <Button size="large" onClick={() => handleSendAnswer(1)}>
-                                1
-                              </Button>
-                            </Space.Compact>
-                          </Space>
-                        )}
-                      </Space>
-
-                      <Space direction="vertical" align="center">
-                        Загадал
-                        <div
-                          style={{
-                            padding: 18,
-                            border: "1px solid lightgray",
-                            width: 128,
-                            textAlign: "center",
-                            background:
-                              player.answer === null || oponent.answer === null || playerIndex % 2 !== 0
-                                ? "none"
-                                : answer1 === answer2
-                                ? "#f39292"
-                                : "#74e978",
-                          }}
-                        >
-                          {player.answer === null || oponent.answer === null ? "-" : answer1}
-                        </div>
-                        <div style={{ fontWeight: 700 }}>VS</div>
-                        Отгадал
-                        <div
-                          style={{
-                            padding: 18,
-                            border: "1px solid lightgray",
-                            width: 128,
-                            textAlign: "center",
-                            background:
-                              player.answer === null || oponent.answer === null || playerIndex % 2 === 0
-                                ? "none"
-                                : answer1 !== answer2
-                                ? "#f39292"
-                                : "#74e978",
-                          }}
-                        >
-                          {player.answer === null || oponent.answer === null ? "-" : answer2}
-                        </div>
-                      </Space>
-                      <Space direction="vertical" align="center" style={playerStyles}>
-                        <UserOutlined style={{ fontSize: 48 }} />
-                        <div style={{ fontWeight: 700 }}>
-                          {oponent.name} {oponent.bot ? "(BOT)" : ""}{" "}
-                        </div>
-                        {oponentIndex % 2 === 0 ? "загадывает" : "разгадывает"}
-                      </Space>
-                    </div>
-                  </>
+                  <></>
                 ) : (
                   <>
                     {dayjs(countdown).diff(dayjs(), "minute", true) <= 5 &&
@@ -387,6 +355,26 @@ export const MainPage = () => {
               <LoginForm setUser={setUser} />
             )}
           </Space>
+        )}
+        {anserModalOpen && (
+          <AnswerModal
+            open={false && anserModalOpen}
+            onCancel={() => {
+              setAnserModalOpen(false);
+              // if (youtubePlayer && player) {
+              //   // youtubePlayer.setVolume(100);
+              //   youtubePlayer.playVideo();
+              // }
+            }}
+            onAnswer={(ans) => {
+              // handleSendAnswer(ans);
+              setAnserModalOpen(false);
+              // if (youtubePlayer && player) {
+              //   // youtubePlayer.setVolume(100);
+              //   youtubePlayer.playVideo();
+              // }
+            }}
+          />
         )}
       </Content>
     </Layout>

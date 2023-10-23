@@ -3,20 +3,44 @@ import { postData, putData } from "../../tools";
 import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, HomeOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
+  const [hours, setHours] = useState();
+  const [minutes, setMinutes] = useState();
+  const [roundInterval, setRoundInterval] = useState();
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   if (!user) {
     navigate("/");
   }
+
+  const fetchData = useCallback(async () => {
+    const response = await fetch(
+      process.env.REACT_APP_ENVIRONMENT === "production"
+        ? "https://server.illusiumgame.com/time"
+        : "http://localhost:9000/time",
+      {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
+      }
+    );
+    const time = await response.json();
+    setHours(time.gameStartHour);
+    setMinutes(time.gameStartMinutes);
+    setRoundInterval(time.roundInterval)
+  }, []);
+
   useEffect(() => {
     if (user) localStorage.setItem("user", JSON.stringify(user));
   }, [user]);
 
+  useEffect(() => {
+    fetchData();
+  },[])
+
   const profile = (
-    <Space align="center">
+    <Space>
       <Form
         name="profile"
         layout="vertical"
@@ -44,12 +68,17 @@ export const ProfilePage = () => {
         </Form.Item>
       </Form>
 
-      {user && user.isAdmin && (
+      {user && user.isAdmin && roundInterval && (
         <Form
           name="time"
           layout="vertical"
           style={{
             maxWidth: 800,
+          }}
+          initialValues={{
+            gameStartHour: hours,
+            gameStartMinutes: minutes,
+            roundInterval
           }}
           onFinish={(values) => {
             postData("/time", values).then((data) => {
@@ -61,6 +90,9 @@ export const ProfilePage = () => {
             <InputNumber />
           </Form.Item>
           <Form.Item label="Минута" name="gameStartMinutes">
+            <InputNumber />
+          </Form.Item>
+          <Form.Item label="Интервал (мс)" name="roundInterval">
             <InputNumber />
           </Form.Item>
 
@@ -136,6 +168,7 @@ export const ProfilePage = () => {
             disabled={!localStorage.getItem("user")}
             onClick={() => {
               localStorage.removeItem("user");
+              navigate("/");
               window.location.reload();
             }}
             icon={<LogoutOutlined style={{fontSize: 16}} />}
