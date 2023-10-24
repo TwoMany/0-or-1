@@ -9,7 +9,6 @@ import { get, isEqual } from "lodash";
 import { Content, Header } from "antd/es/layout/layout";
 import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import YouTube from "react-youtube";
 import "./index.css";
 import { AnswerModal } from "./AnswerModal";
 import { VideoPlayer } from "./VideoPlayer";
@@ -17,6 +16,7 @@ import { VideoPlayer } from "./VideoPlayer";
 export const MainPage = () => {
   const [user, setUser] = useState(localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : undefined);
   const [players, setPlayers] = useState([]);
+  const [phase, setPhase] = useState();
   const [winner, setWinner] = useState();
   const [timer, setTimer] = useState();
   const [hours, setHours] = useState(22);
@@ -24,12 +24,12 @@ export const MainPage = () => {
   const [roundInterval, setRoundInterval] = useState(60000);
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
-  const [anserModalOpen, setAnserModalOpen] = useState(false);
+  // const [anserModalOpen, setAnserModalOpen] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [videos, setVideos] = useState([]);
   const navigate = useNavigate();
-  const [hideCount, setHideCount] = useState(false);
-  const [gameStarted, setGameStarted] = useState(0);
+  // const [hideCount, setHideCount] = useState(false);
+  // const [gameStarted, setGameStarted] = useState(0);
   const [videoId, setVideoId] = useState();
 
   const fetchPlayers = useCallback(async () => {
@@ -45,8 +45,9 @@ export const MainPage = () => {
         mode: process.env.REACT_APP_ENVIRONMENT === "production" ? "cors" : undefined, // no-cors, *cors, same-origin
       }
     );
-    const players = await response.json();
-    setPlayers(players.response);
+    const data = await response.json();
+    setPlayers(data.response.players);
+    setPhase(data.response.phase);
     setLoadingPlayers(false);
   }, []);
 
@@ -87,8 +88,8 @@ export const MainPage = () => {
   }, []);
 
   useEffect(() => {
-    fetchPlayers();
     fetchData();
+    fetchPlayers();
     fetchVideos();
   }, []);
 
@@ -106,25 +107,47 @@ export const MainPage = () => {
 
   useEffect(() => {
     function onPlayersChange(value) {
-      console.log("onPlayersChange")
+      if (phase) return;
+      console.log("onPlayersChange", value);
       if (!isEqual(players, value)) {
-        const playerIndex = (value || []).findIndex(({ userId }) => get(user, "_id") === userId);
         setPlayers(value);
-        console.log(playerIndex);
-        if (dayjs(countdown).diff(dayjs()) <= 0 && playerIndex >= 0) setGameStarted(1);
       }
     }
     socket.on("players", onPlayersChange);
     return () => {
       socket.off("players", onPlayersChange);
     };
-  }, [players, countdown, user]);
+  }, [players, user, phase]);
+
+  useEffect(() => {
+    function onPhaseChange(value) {
+      console.log("GAME_SOCKET", value);
+      const playerIndex = players.findIndex(({ userId }) => get(user, "_id") === userId);
+      const currIndex = (value.players || []).findIndex(({ userId }) => get(user, "_id") === userId);
+      if (playerIndex === -1) return;
+      if (currIndex === -1) {
+        notification.error({ message: "Проиграл" });
+        setPhase(null);
+        setPlayers(value.players);
+        return;
+      }
+
+      if(phase === 'IDLE') notification.success({ message: "Победа" });
+      setPhase(value.phase);
+      setPlayers(value.players);
+    }
+    socket.on("GAME_SOCKET", onPhaseChange);
+    return () => {
+      socket.off("GAME_SOCKET", onPhaseChange);
+    };
+  }, [phase, players, user]);
 
   useEffect(() => {
     function onGameFinish(value) {
       setWinner(value.winner);
       setVideoId(undefined);
       setPlayers([]);
+      setPhase(null);
     }
     socket.on("game_finished", onGameFinish);
     return () => {
@@ -132,23 +155,20 @@ export const MainPage = () => {
     };
   }, [winner]);
 
-  useEffect(() => {
-    function onLose(value = []) {
-      console.log(value, user);
+  // useEffect(() => {
+  //   function onLose(value = []) {
+  //     console.log(value, user);
 
-      if (value.includes(user._id)) {
-        notification.error({ message: "Проиграл" });
-      } else {
-        if(gameStarted !== 1) {
-          setGameStarted(1);
-        }
-      }
-    }
-    socket.on("losers", onLose);
-    return () => {
-      socket.off("losers", onLose);
-    };
-  }, [user]);
+  //     if (value.includes(user._id)) {
+  //       notification.error({ message: "Проиграл" });
+  //       setPhase(null);
+  //     }
+  //   }
+  //   socket.on("losers", onLose);
+  //   return () => {
+  //     socket.off("losers", onLose);
+  //   };
+  // }, [user]);
 
   useEffect(() => {
     function onKick(value = []) {
@@ -162,38 +182,25 @@ export const MainPage = () => {
     };
   }, [user]);
 
-  const playerStyles = {
-    border: "1px solid lightgray",
-    padding: 48,
-  };
-
-  const isMobile = window.innerWidth < 868;
-
   const playerIndex = (players || []).findIndex(({ userId }) => get(user, "_id") === userId);
   const player = get(players, playerIndex);
-
-  if (player && !gameStarted && dayjs(countdown).diff(dayjs()) <= 0) {
-    setGameStarted(2);
-  }
 
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
-  const answer1 = playerIndex % 2 === 0 ? get(player, "answer") : get(oponent, "answer");
-
-  const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
-
   const diff = countdown && roundInterval ? Math.floor(dayjs().diff(dayjs(countdown)) / roundInterval) : 0;
 
-  const newVideoId = get(
-    videos,
-    `[${
-      videos.length && diff % videos.length >= 0 && diff % videos.length < videos.length ? diff % videos.length : 0
-    }].link`
-  );
+  if (phase === "START") {
+    const newVideoId = get(
+      videos,
+      `[${
+        videos.length && diff % videos.length >= 0 && diff % videos.length < videos.length ? diff % videos.length : 0
+      }].link`
+    );
 
-  if (newVideoId != videoId) {
-    setVideoId(newVideoId);
+    if (newVideoId != videoId) {
+      setVideoId(newVideoId);
+    }
   }
 
   const formatTime = (digit) => (digit < 10 ? `0${digit}` : digit);
@@ -245,7 +252,7 @@ export const MainPage = () => {
                 <div style={{ fontSize: 28 }}>
                   Игра начнётся в {formatTime(hours)}:{formatTime(minutes)}
                 </div>
-                {countdown && !hideCount && (!gameStarted || gameStarted === 2) && (
+                {countdown && !phase && (
                   <>
                     осталось{" "}
                     <Countdown
@@ -253,17 +260,17 @@ export const MainPage = () => {
                       overtime
                       // date={dayjs(countdown).diff(dayjs()) <= 0 && get(players, "length") ? timer : countdown}
                       date={countdown}
-                      onComplete={() => {
-                        // if (players.length >= 2) setAnserModalOpen(true);
-                        !dayjs(countdown).diff(dayjs()) && window.location.reload();
-                        if (get(players, "length")) {
-                          if (!gameStarted) setGameStarted(1);
-                          // setHideCount(true);
-                          // setTimeout(() => {
-                          //   setHideCount(false);
-                          // }, 0);
-                        }
-                      }}
+                      // onComplete={() => {
+                      //   // if (players.length >= 2) setAnserModalOpen(true);
+                      //   !dayjs(countdown).diff(dayjs()) && window.location.reload();
+                      //   if (get(players, "length")) {
+                      //     if (!gameStarted) setGameStarted(1);
+                      //     // setHideCount(true);
+                      //     // setTimeout(() => {
+                      //     //   setHideCount(false);
+                      //     // }, 0);
+                      //   }
+                      // }}
                       onStop={() => {
                         console.log("stop");
                       }}
@@ -280,23 +287,15 @@ export const MainPage = () => {
                     />
                   </>
                 )}
+                {oponent && phase && <span>Опонент {oponent.name}</span>}
               </div>
             )}
 
-            {player && !winner ? (
-              <VideoPlayer
-                videoId={videoId}
-                players={players}
-                user={user}
-                setGameStarted={setGameStarted}
-                gameStarted={gameStarted}
-                propsTimer={timer}
-                setPropsTimer={setTimer}
-                roundInterval={roundInterval}
-              />
-            ) : (
+            {/* {player && !winner ? ( */}
+              <VideoPlayer videoId={videoId} players={players} user={user} phase={phase} setPhase={setPhase} />
+            {/* ) : (
               <div></div>
-            )}
+            )} */}
 
             {/* {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
               <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
@@ -356,7 +355,7 @@ export const MainPage = () => {
             )}
           </Space>
         )}
-        {anserModalOpen && (
+        {/* {anserModalOpen && (
           <AnswerModal
             open={false && anserModalOpen}
             onCancel={() => {
@@ -375,7 +374,7 @@ export const MainPage = () => {
               // }
             }}
           />
-        )}
+        )} */}
       </Content>
     </Layout>
   );

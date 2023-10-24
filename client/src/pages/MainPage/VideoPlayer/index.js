@@ -12,21 +12,18 @@ export const VideoPlayer = ({
   players,
   user,
   videoId,
-  gameStarted,
-  propsTimer,
-  setGameStarted,
-  setPropsTimer,
-  roundInterval,
+  phase,
+  setPhase
 }) => {
   const [youtubePlayer, setYoutubePlayer] = useState();
   const [videLayer, setVideoLayer] = useState(true);
   const [countdown, setCountdown] = useState();
 
   useEffect(() => {
-    if (gameStarted === 1 && !countdown) {
+    if (phase === 'START') {
       setCountdown(10);
     }
-  }, [gameStarted]);
+  }, [phase]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -41,9 +38,9 @@ export const VideoPlayer = ({
   const oponentIndex = playerIndex % 2 === 0 ? playerIndex + 1 : playerIndex - 1;
   const oponent = get(players, oponentIndex);
 
-  const answer1 = playerIndex % 2 === 0 ? get(player, "answer") : get(oponent, "answer");
+  // const answer1 = playerIndex % 2 === 0 ? get(player, "answer") : get(oponent, "answer");
 
-  const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
+  // const answer2 = playerIndex % 2 !== 0 ? get(player, "answer") : get(oponent, "answer");
 
   const onReady = (event) => {
     // access to player in all event handlers via event.target
@@ -57,26 +54,23 @@ export const VideoPlayer = ({
       // if (youtubePlayer) youtubePlayer.playVideo();
       postData("/answer", { answer, userId: get(user, "_id") }).then((data) => {
         setCountdown(0);
+        setPhase('IDLE')
         if (videLayer) setVideoLayer(false);
         if (youtubePlayer) youtubePlayer.playVideo();
       });
     },
-    [user, videLayer, youtubePlayer]
+    [setPhase, user, videLayer, youtubePlayer]
   );
-  if (countdown <= 0) {
-    if (gameStarted === 1) {
-      setGameStarted(2);
-    }
-    if (videLayer && !get(player, "answer")) {
+  if (countdown <= 0 && phase === 'START') {
+    if (videLayer) {
+      setPhase('IDLE');
       setVideoLayer(false);
       if (youtubePlayer) youtubePlayer.playVideo();
     }
   }
 
-  console.log(gameStarted, countdown);
-
   return (
-    <div style={{ position: "relative", height: !gameStarted ? 0 : "auto", overflow: "auto" }}>
+    <div style={{ position: "relative", height: !phase ? 0 : "auto", overflow: "auto" }}>
       <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
         <YouTube
           videoId={videoId}
@@ -95,7 +89,7 @@ export const VideoPlayer = ({
           //   setYoutubePlayer(event.target);
           // }}
           onStateChange={(state) => {
-            console.log(state);
+            // console.log(state);
             if (state.data === 0) {
               setVideoLayer(true);
             }

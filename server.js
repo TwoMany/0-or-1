@@ -47,11 +47,13 @@ async function setup(kicked) {
 
   if (kicked) {
     io.emit("kicked", playersToDelete.map((el) => el.userId));
+    io.emit("GAME_SOCKET", { players: allowedPlayers, phase: phases[0] });
   } else {
-    io.emit("losers", playersToDelete.map((el) => el.userId));
+    // io.emit("losers", playersToDelete.map((el) => el.userId));
   }
 
-  io.emit("players", allowedPlayers);
+
+  // io.emit("players", allowedPlayers);
 
   return allowedPlayers;
 }
@@ -89,7 +91,8 @@ async function startGame(roundInterval) {
     const gameInterval = setInterval(async () => {
       const players = await setup(false);
 
-      io.emit("GAME_SOCKET", { players, phase: phases[0] });
+
+      // io.emit("GAME_SOCKET", { players, phase: phases[1] });
       await db.collection('phases').deleteMany();
       await db.collection('phases').insertOne({phase: phases[0]});
 
@@ -108,27 +111,31 @@ async function startGame(roundInterval) {
         }
 
         if (_.isEqual(players[i].answer, players[i + 1].answer)) {
-          io.emit("losers", [players[i].userId]);
+          // io.emit("losers", [players[i].userId]);
           await db.collection("players").deleteOne({ _id: players[i]._id });
           await db.collection("players").updateOne({ _id: players[i + 1]._id }, { $set: { answer: null, bot: players[i + 1].bot } });
         } else if (!_.isEqual(players[i].answer, players[i + 1].answer)) {
-          io.emit("losers", [players[i + 1].userId]);
+          // io.emit("losers", [players[i + 1].userId]);
           await db.collection("players").deleteOne({ _id: players[i + 1]._id });
           await db.collection("players").updateOne({ _id: players[i]._id }, { $set: { answer: null, bot: players[i].bot } });
         }
       }
       let eventPlayers = await db.collection("players").find({}).toArray();
 
-      setTimeout(io.emit("GAME_SOCKET", { players: eventPlayers, phase: phases[1] }), 10000);
-      await db.collection('phases').deleteMany();
-      await db.collection('phases').insertOne({phase: phases[1]});
+      // setTimeout(() => io.emit("GAME_SOCKET", { players: eventPlayers, phase: phases[1] }), 10000);
+      // await db.collection('phases').deleteMany();
+      // await db.collection('phases').insertOne({phase: phases[1]});
 
-      io.emit("players", eventPlayers);
+      // io.emit("players", eventPlayers);
+
+
+      io.emit("GAME_SOCKET", { players: eventPlayers, phase: phases[0] });
 
       if (eventPlayers.length == 1) {
         clearInterval(gameInterval);
         await db.collection("winners").insertOne(_.omit(...eventPlayers, ["_id", "answer"]));
         await db.collection("players").deleteMany({});
+        await db.collection('phases').deleteMany();
         io.emit("game_finished", { winner: { ...eventPlayers[0] } });
         gameRunning = false;
         return;
@@ -174,8 +181,8 @@ app.post("/answer", async (req, res) => {
 app.get("/players", async (req, res) => {
   const players = await db.collection("players").find({}).toArray();
   const [phases] = await db.collection("phases").find({}).toArray();
-  io.emit("players", players);
-  res.status(200).send({ response: { players, phase: phases.phase || null} });
+  // io.emit("players", players);
+  res.status(200).send({ response: { players, phase: _.get(phases, 'phase', null)} });
 });
 
 app.get("/users", async (req, res) => {
