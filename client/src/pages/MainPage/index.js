@@ -132,7 +132,7 @@ export const MainPage = () => {
         return;
       }
 
-      if(phase === 'IDLE') notification.success({ message: "Победа" });
+      if (phase === "IDLE") notification.success({ message: "Победа" });
       setPhase(value.phase);
       setPlayers(value.players);
     }
@@ -287,38 +287,7 @@ export const MainPage = () => {
                     />
                   </>
                 )}
-                {oponent && phase && <span>Опонент {oponent.name}</span>}
               </div>
-            )}
-
-            {/* {player && !winner ? ( */}
-              <VideoPlayer videoId={videoId} players={players} user={user} phase={phase} setPhase={setPhase} />
-            {/* ) : (
-              <div></div>
-            )} */}
-
-            {/* {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
-              <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
-                <YouTube
-                  videoId={videoId}
-                  opts={opts}
-                  onReady={onReady}
-                  // onStateChange={(event) => {
-                  //   setYoutubePlayer(event.target);
-                  // }}
-                  onError={(e) => {
-                    console.log(e);
-                  }}
-                />
-              </div>
-            ) : (
-              <div></div>
-            )} */}
-
-            {winner && (
-              <h2>
-                Победитель {winner.name} {winner.bot ? "(BOT)" : ""}
-              </h2>
             )}
 
             {user ? (
@@ -326,6 +295,7 @@ export const MainPage = () => {
                 <div>
                   {user.login} | {get(players, "length")} участников
                 </div>
+                {oponent && phase && <div>опонент {oponent.name}</div>}
                 {dayjs(countdown).diff(dayjs()) <= 0 && player && oponent ? (
                   <></>
                 ) : (
@@ -352,6 +322,36 @@ export const MainPage = () => {
               </Space>
             ) : (
               <LoginForm setUser={setUser} />
+            )}
+
+            {/* {player && !winner ? ( */}
+            <VideoPlayer videoId={videoId} players={players} user={user} phase={phase} setPhase={setPhase} />
+            {/* ) : (
+              <div></div>
+            )} */}
+
+            {/* {videoId && Boolean(get(players, "length")) && player && !hideCount ? (
+              <div className="auto-resizable-iframe" style={{ pointerEvents: "none", width: "100%" }}>
+                <YouTube
+                  videoId={videoId}
+                  opts={opts}
+                  onReady={onReady}
+                  // onStateChange={(event) => {
+                  //   setYoutubePlayer(event.target);
+                  // }}
+                  onError={(e) => {
+                    console.log(e);
+                  }}
+                />
+              </div>
+            ) : (
+              <div></div>
+            )} */}
+
+            {winner && (
+              <h2>
+                Победитель {winner.name} {winner.bot ? "(BOT)" : ""}
+              </h2>
             )}
           </Space>
         )}
