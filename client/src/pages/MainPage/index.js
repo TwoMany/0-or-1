@@ -78,11 +78,19 @@ export const MainPage = () => {
       }
     );
     const time = await response.json();
-    const cnt = new Date().setHours(time.gameStartHour, time.gameStartMinutes, 0, 0);
+    var date = new Date();
+    var now_utc = Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      time.gameStartHour,
+      time.gameStartMinutes
+    );
+    const cnt = new Date(now_utc).setHours(time.gameStartHour, time.gameStartMinutes, 0, 0);
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
     setRoundInterval(time.roundInterval);
-    setTimer(dayjs(cnt).startOf("minute").valueOf() + Number(time.roundInterval));
+    // setTimer(dayjs(cnt).startOf("minute").valueOf() + Number(time.roundInterval));
     setCountdown(cnt);
     setLoadingData(false);
   }, []);
