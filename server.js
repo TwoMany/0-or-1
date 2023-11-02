@@ -72,7 +72,7 @@ async function game() {
       },
       null,
       true,
-      "Europe/Riga"
+      "Etc/GMT"
     );
 
     job.start();
