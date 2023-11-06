@@ -18,9 +18,9 @@ export const MainPage = () => {
   const [players, setPlayers] = useState([]);
   const [phase, setPhase] = useState();
   const [winner, setWinner] = useState();
-  const [timer, setTimer] = useState();
   const [hours, setHours] = useState(22);
   const [minutes, setMinutes] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [roundInterval, setRoundInterval] = useState(60000);
   const [countdown, setCountdown] = useState();
   const [loadingPlayers, setLoadingPlayers] = useState(false);
@@ -78,20 +78,17 @@ export const MainPage = () => {
       }
     );
     const time = await response.json();
-    var date = new Date();
-    var now_utc = Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth(),
-      date.getUTCDate(),
-      time.gameStartHour,
-      time.gameStartMinutes
-    );
-    const cnt = new Date(now_utc).setHours(time.gameStartHour, time.gameStartMinutes, 0, 0);
+    const offset = Number(Math.floor(new Date().getTimezoneOffset() / 60) * -1);
+    const hours = Number(time.gameStartHour) + offset;
+    const gameStartHour = hours >= 24 ? hours - 24 : hours;
+    console.log(offset, gameStartHour);
+    const cnt = new Date().setHours(gameStartHour, time.gameStartMinutes, 0, 0);
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
     setRoundInterval(time.roundInterval);
     // setTimer(dayjs(cnt).startOf("minute").valueOf() + Number(time.roundInterval));
     setCountdown(cnt);
+    setOffset(offset);
     setLoadingData(false);
   }, []);
 
@@ -258,7 +255,7 @@ export const MainPage = () => {
             {user && (
               <div style={{ fontSize: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 28 }}>
-                  Игра начнётся в {formatTime(hours)}:{formatTime(minutes)}
+                  Игра начнётся в {formatTime(Number(hours) + offset)}:{formatTime(minutes)}
                 </div>
                 {countdown && !phase && (
                   <>

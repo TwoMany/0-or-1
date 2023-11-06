@@ -28,7 +28,7 @@ export const ProfilePage = () => {
     const time = await response.json();
     setHours(time.gameStartHour);
     setMinutes(time.gameStartMinutes);
-    setRoundInterval(time.roundInterval)
+    setRoundInterval(time.roundInterval);
   }, []);
 
   useEffect(() => {
@@ -37,7 +37,9 @@ export const ProfilePage = () => {
 
   useEffect(() => {
     fetchData();
-  },[])
+  }, []);
+
+  const offset = Math.floor(new Date().getTimezoneOffset() / 60) * -1;
 
   const profile = (
     <Space>
@@ -76,12 +78,16 @@ export const ProfilePage = () => {
             maxWidth: 800,
           }}
           initialValues={{
-            gameStartHour: hours,
+            gameStartHour: Number(hours) + Number(offset),
             gameStartMinutes: minutes,
-            roundInterval
+            roundInterval,
           }}
           onFinish={(values) => {
-            postData("/time", values).then((data) => {
+            const gameStartHour = values.gameStartHour - offset;
+            postData("/time", {
+              ...values,
+              gameStartHour: gameStartHour < 0 ? 24 - gameStartHour : gameStartHour,
+            }).then((data) => {
               notification.success({ message: "Сохранено" });
             });
           }}
@@ -107,39 +113,42 @@ export const ProfilePage = () => {
   );
 
   const partners = (
-    <Table dataSource={[]} columns={[
-      {
-        title: '№',
-        dataIndex: 'number',
-        key: 'number',
-      },
-      {
-        title: 'Партнер',
-        dataIndex: 'name',
-        key: 'name',
-      },
-      {
-        title: 'Деятельность',
-        dataIndex: 'activity',
-        key: 'activity',
-      },
-      {
-        title: 'Ролик',
-        dataIndex: 'link',
-        key: 'link',
-      },
-      {
-        title: 'Веб-сайт',
-        dataIndex: 'site',
-        key: 'site',
-      },
-      {
-        title: 'Промокод',
-        dataIndex: 'code',
-        key: 'code',
-      },
-    ]}/>
-  )
+    <Table
+      dataSource={[]}
+      columns={[
+        {
+          title: "№",
+          dataIndex: "number",
+          key: "number",
+        },
+        {
+          title: "Партнер",
+          dataIndex: "name",
+          key: "name",
+        },
+        {
+          title: "Деятельность",
+          dataIndex: "activity",
+          key: "activity",
+        },
+        {
+          title: "Ролик",
+          dataIndex: "link",
+          key: "link",
+        },
+        {
+          title: "Веб-сайт",
+          dataIndex: "site",
+          key: "site",
+        },
+        {
+          title: "Промокод",
+          dataIndex: "code",
+          key: "code",
+        },
+      ]}
+    />
+  );
 
   const tabs = [
     {
@@ -156,14 +165,16 @@ export const ProfilePage = () => {
 
   return (
     <Layout>
-      <Header style={{ display: "flex", alignItems: "center", justifyContent: 'flex-end' }}>
+      <Header style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         <Space>
           <Button
             onClick={() => {
               navigate("/");
             }}
-            icon={<HomeOutlined style={{fontSize: 16}} />}
-            >Вернутся в игру</Button>
+            icon={<HomeOutlined style={{ fontSize: 16 }} />}
+          >
+            Вернутся в игру
+          </Button>
           <Button
             disabled={!localStorage.getItem("user")}
             onClick={() => {
@@ -171,12 +182,14 @@ export const ProfilePage = () => {
               navigate("/");
               window.location.reload();
             }}
-            icon={<LogoutOutlined style={{fontSize: 16}} />}
-          >Выйти</Button>
+            icon={<LogoutOutlined style={{ fontSize: 16 }} />}
+          >
+            Выйти
+          </Button>
         </Space>
       </Header>
       <Content style={{ padding: "12px 24px", minHeight: 280 }}>
-        <Tabs items={tabs}/>
+        <Tabs items={tabs} />
       </Content>
     </Layout>
   );
