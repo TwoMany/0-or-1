@@ -18,7 +18,7 @@ export const ProfilePage = () => {
   const fetchData = useCallback(async () => {
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
-        ? "https://server.illusiumgame.com/time"
+        ? "https://server.illusion-game.com/time"
         : "http://localhost:9000/time",
       {
         method: "GET", // *GET, POST, PUT, DELETE, etc.

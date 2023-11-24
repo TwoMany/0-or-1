@@ -24,8 +24,8 @@
   "scripts": {
     "start": "REACT_APP_PROXY=http://localhost:9000 react-scripts start",
     "build": "REACT_APP_PROXY=http://localhost:9000 react-scripts build",
-    "start:prod": "REACT_APP_ENVIRONMENT=production REACT_APP_PROXY=https://server.illusiumgame.com react-scripts start",
-    "build:prod": "REACT_APP_ENVIRONMENT=production REACT_APP_PROXY=https://server.illusiumgame.com react-scripts build",
+    "start:prod": "REACT_APP_ENVIRONMENT=production REACT_APP_PROXY=https://server.illusion-game.com react-scripts start",
+    "build:prod": "REACT_APP_ENVIRONMENT=production REACT_APP_PROXY=https://server.illusion-game.com react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

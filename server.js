@@ -6,7 +6,7 @@ const CronJob = require("cron").CronJob;
 const socketIO = require("socket.io");
 const io = socketIO(server, {
   cors: {
-    origin: process.env.NODE_ENV == "production" ? "https://server.illusiumgame.com" : "http://localhost:9000",
+    origin: process.env.NODE_ENV == "production" ? "https://server.illusion-game.com" : "http://localhost:9000",
     methods: ["GET", "POST", "PUT", "DELETE"],
     //allowedHeaders: ["my-custom-header"],
   },

@@ -38,7 +38,7 @@ export const MainPage = () => {
     // setLoadingPlayers(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
-        ? "https://server.illusiumgame.com/players"
+        ? "https://server.illusion-game.com/players"
         : "http://localhost:9000/players",
       {
         method: "GET", // *GET, POST, PUT, DELETE, etc.
@@ -54,7 +54,7 @@ export const MainPage = () => {
   const fetchVideos = useCallback(async () => {
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
-        ? "https://server.illusiumgame.com/videos"
+        ? "https://server.illusion-game.com/videos"
         : "http://localhost:9000/videos",
       {
         method: "GET", // *GET, POST, PUT, DELETE, etc.
@@ -70,7 +70,7 @@ export const MainPage = () => {
     setLoadingData(true);
     const response = await fetch(
       process.env.REACT_APP_ENVIRONMENT === "production"
-        ? "https://server.illusiumgame.com/time"
+        ? "https://server.illusion-game.com/time"
         : "http://localhost:9000/time",
       {
         method: "GET", // *GET, POST, PUT, DELETE, etc.
