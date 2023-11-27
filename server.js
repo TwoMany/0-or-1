@@ -352,7 +352,7 @@ app.post("/participate", async (req, res) => {
   }
 
 });
-server.listen(9000);
+server.listen(8000);
 
 io.on("connection", async (socket) => {
   socket.on("disconnect", () => { });
