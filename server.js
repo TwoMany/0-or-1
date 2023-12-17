@@ -240,7 +240,7 @@ app.post("/time", async (req, res) => {
       { _id: _.get(time, "_id") },
       { $set: { gameStartHour: gameStartHour, gameStartMinutes: gameStartMinutes, roundInterval: roundInterval } }
     );
-
+  io.emit("RESET", []);
   await stopAllJobs();
   await game();
 
