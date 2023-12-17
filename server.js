@@ -45,7 +45,7 @@ async function setup(kicked) {
 
   await db.collection("players").deleteMany({ _id: { $in: playersToDelete.map((el) => el._id) } });
 
-  if (kicked && _.get(playersToDelete, 'length') > 0) {
+  if (kicked && _.get(players, 'length') > 0) {
     io.emit("kicked", playersToDelete.map((el) => el.userId));
     io.emit("GAME_SOCKET", { players: allowedPlayers, phase: phases[0] });
   } else {
